@@ -11,6 +11,7 @@ void main() async {
   final sharedPreferences = await SharedPreferences.getInstance();
 
   runApp(
+
     ProviderScope(
       overrides: [
         sharedPreferencesProvider.overrideWithValue(sharedPreferences),

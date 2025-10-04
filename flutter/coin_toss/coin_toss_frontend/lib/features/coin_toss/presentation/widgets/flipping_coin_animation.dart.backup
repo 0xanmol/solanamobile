@@ -1,0 +1,171 @@
+import 'package:flutter/material.dart';
+import 'dart:math' as math;
+
+class FlippingCoinAnimation extends StatefulWidget {
+  const FlippingCoinAnimation({super.key, this.size = 200});
+
+  final double size;
+
+  @override
+  State<FlippingCoinAnimation> createState() => _FlippingCoinAnimationState();
+}
+
+class _FlippingCoinAnimationState extends State<FlippingCoinAnimation>
+    with TickerProviderStateMixin {
+  late AnimationController _flipController;
+  late AnimationController _bounceController;
+  late Animation<double> _flipAnimation;
+  late Animation<double> _bounceAnimation;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    
+    // Main flip animation - simulates coin flipping through 3D space
+    _flipController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+    
+    // Bounce animation for landing effect
+    _bounceController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    
+    // Create flip animation with custom curve for realistic physics
+    _flipAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _flipController,
+      curve: Curves.easeInOut,
+    ));
+    
+    // Create bounce animation for landing
+    _bounceAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _bounceController,
+      curve: Curves.elasticOut,
+    ));
+    
+    // Scale animation for depth effect
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.3,
+    ).animate(CurvedAnimation(
+      parent: _flipController,
+      curve: Curves.easeInOut,
+    ));
+    
+    // Start the animation sequence
+    _startAnimation();
+  }
+
+  void _startAnimation() async {
+    // Start flip animation
+    await _flipController.forward();
+    
+    // Start bounce animation for landing effect
+    await _bounceController.forward();
+    
+    // Reset for potential repeat
+    _flipController.reset();
+    _bounceController.reset();
+  }
+
+  @override
+  void dispose() {
+    _flipController.dispose();
+    _bounceController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final double s = widget.size;
+    final double borderWidth = 6 * (s / 200);
+    final double fontSize = 120 * (s / 200);
+
+    return AnimatedBuilder(
+      animation: Listenable.merge([_flipAnimation, _bounceAnimation]),
+      builder: (context, child) {
+        // Calculate rotation angle (multiple rotations for spinning effect)
+        final double rotationAngle = _flipAnimation.value * 4 * math.pi;
+        
+        // Calculate scale based on flip progress (creates 3D depth effect)
+        final double scale = _scaleAnimation.value;
+        
+        // Calculate bounce offset
+        final double bounceOffset = _bounceAnimation.value * 10;
+        
+        // Calculate which side should be visible based on rotation
+        final bool showHeads = (rotationAngle % (2 * math.pi)) < math.pi;
+        
+        return Transform.translate(
+          offset: Offset(0, -bounceOffset),
+          child: Transform.scale(
+            scale: scale,
+            child: Transform(
+              alignment: Alignment.center,
+              transform: Matrix4.identity()
+                ..setEntry(3, 2, 0.001) // Perspective
+                ..rotateY(rotationAngle),
+              child: Container(
+                width: s,
+                height: s,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: showHeads ? Colors.amber[600]! : Colors.grey[600]!,
+                  boxShadow: [
+                    BoxShadow(
+                      color: (showHeads ? Colors.amber : Colors.grey)
+                          .withValues(alpha: 0.4),
+                      blurRadius: 30 * scale,
+                      spreadRadius: 10 * scale,
+                      offset: Offset(0, 8 * scale),
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.4),
+                      blurRadius: 20 * scale,
+                      spreadRadius: 5 * scale,
+                      offset: Offset(0, 12 * scale),
+                    ),
+                  ],
+                  border: Border.all(
+                    color: showHeads ? Colors.amber[100]! : Colors.grey[300]!,
+                    width: borderWidth * scale,
+                  ),
+                ),
+                child: Center(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 100),
+                    child: Text(
+                      showHeads ? 'H' : 'T',
+                      key: ValueKey(showHeads),
+                      style: TextStyle(
+                        fontSize: fontSize * scale,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w900,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black54,
+                            blurRadius: 12 * scale,
+                            offset: Offset(3 * scale, 3 * scale),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}

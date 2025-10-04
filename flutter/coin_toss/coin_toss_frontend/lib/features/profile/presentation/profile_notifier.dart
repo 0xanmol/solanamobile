@@ -41,7 +41,7 @@ class ProfileNotifier extends StateNotifier<ProfileScreenState> {
     required Uint8List publicKey,
     required BuildContext context,
   }) async {
-    state = state.copyWith(isLoading: true);
+    state = state.copyWith(isLoading: true, error: null);
 
     LocalAssociationScenario? session;
     try {
@@ -59,21 +59,23 @@ class ProfileNotifier extends StateNotifier<ProfileScreenState> {
         rpcUrl: Uri.parse(dotenv.env['SOLANA_RPC_URL']!),
         websocketUrl: Uri.parse(dotenv.env['SOLANA_WEBSOCKET_URL']!),
       );
+
       final playerPublicKey = Ed25519HDPublicKey(publicKey);
+      debugPrint('playerPublicKey: ${playerPublicKey.toBase58()}');
 
       final programId = Ed25519HDPublicKey.fromBase58(
-          dotenv.env['SOLANA_PROGRAM_ID']!);
+        dotenv.env['SOLANA_PROGRAM_ID']!,
+      );
 
       final playerProfilePda = await Ed25519HDPublicKey.findProgramAddress(
-        seeds: [
-          'profile'.codeUnits,
-          playerPublicKey.bytes,
-        ],
+        seeds: ['profile'.codeUnits, playerPublicKey.bytes],
         programId: programId,
       );
 
-      final info = await client.rpcClient
-          .getAccountInfo(playerProfilePda.toBase58(), encoding: Encoding.base64);
+      final info = await client.rpcClient.getAccountInfo(
+        playerProfilePda.toBase58(),
+        encoding: Encoding.base64,
+      );
 
       if (info.value != null) {
         final accountData = base64Decode(info.value!.data!.toJson()[0]);
@@ -86,10 +88,6 @@ class ProfileNotifier extends StateNotifier<ProfileScreenState> {
         );
         await _profileStorageService.savePlayer(existingPlayer);
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profile already exists!')),
-        );
-
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const CoinTossPage()),
         );
@@ -101,11 +99,20 @@ class ProfileNotifier extends StateNotifier<ProfileScreenState> {
           method: 'create_player_profile',
           accounts: [
             AccountMeta(
-                pubKey: playerProfilePda, isSigner: false, isWriteable: true),
+              pubKey: playerProfilePda,
+              isSigner: false,
+              isWriteable: true,
+            ),
             AccountMeta(
-                pubKey: playerPublicKey, isSigner: true, isWriteable: true),
+              pubKey: playerPublicKey,
+              isSigner: true,
+              isWriteable: true,
+            ),
             AccountMeta(
-                pubKey: SystemProgram.id, isSigner: false, isWriteable: false),
+              pubKey: SystemProgram.id,
+              isSigner: false,
+              isWriteable: false,
+            ),
           ],
           arguments: ByteArray(dto.toBorsh()),
           namespace: 'global',
@@ -118,8 +125,9 @@ class ProfileNotifier extends StateNotifier<ProfileScreenState> {
           feePayer: playerPublicKey,
         );
         final transaction = SignedTx(
-            compiledMessage: compiledMessage,
-            signatures: [Signature(Uint8List(64), publicKey: playerPublicKey)]);
+          compiledMessage: compiledMessage,
+          signatures: [Signature(Uint8List(64), publicKey: playerPublicKey)],
+        );
         final encodedTx = transaction.encode();
         final Uint8List unsignedTxBytes = base64Decode(encodedTx);
 
@@ -127,13 +135,11 @@ class ProfileNotifier extends StateNotifier<ProfileScreenState> {
           transactions: [unsignedTxBytes],
         );
         final signedTx = signed.signedPayloads.first;
-        final sig =
-            await client.rpcClient.sendTransaction(base64Encode(signedTx));
-
-        await client.waitForSignatureStatus(
-          sig,
-          status: Commitment.confirmed,
+        final sig = await client.rpcClient.sendTransaction(
+          base64Encode(signedTx),
         );
+
+        await client.waitForSignatureStatus(sig, status: Commitment.confirmed);
 
         final newPlayer = Player(
           name: name,
@@ -146,9 +152,8 @@ class ProfileNotifier extends StateNotifier<ProfileScreenState> {
         );
       }
     } catch (e) {
-      state = state.copyWith(error: e.toString());
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error creating profile: $e')),
+      state = state.copyWith(
+        error: 'Could not create your profile. Please try again.',
       );
     } finally {
       if (session != null) {
@@ -161,6 +166,6 @@ class ProfileNotifier extends StateNotifier<ProfileScreenState> {
 
 final profileNotifierProvider =
     StateNotifierProvider<ProfileNotifier, ProfileScreenState>((ref) {
-  final profileStorageService = ref.watch(profileStorageServiceProvider);
-  return ProfileNotifier(profileStorageService);
-});
+      final profileStorageService = ref.watch(profileStorageServiceProvider);
+      return ProfileNotifier(profileStorageService);
+    });

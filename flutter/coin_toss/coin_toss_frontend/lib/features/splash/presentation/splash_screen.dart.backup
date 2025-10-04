@@ -1,0 +1,250 @@
+import 'package:coin_toss/features/splash/presentation/splash_notifier.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+class SplashScreen extends ConsumerStatefulWidget {
+  const SplashScreen({super.key});
+
+  @override
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends ConsumerState<SplashScreen>
+    with TickerProviderStateMixin {
+  late AnimationController _rotationController;
+  late AnimationController _fadeController;
+  late AnimationController _scaleController;
+  late Animation<double> _rotationAnimation;
+  late Animation<double> _fadeAnimation;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    
+    // Rotation animation for the coin
+    _rotationController = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    );
+    
+    // Fade animation for the text
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+    
+    // Scale animation for the coin
+    _scaleController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+
+    _rotationAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _rotationController,
+      curve: Curves.easeInOut,
+    ));
+
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _fadeController,
+      curve: Curves.easeIn,
+    ));
+
+    _scaleAnimation = Tween<double>(
+      begin: 0.5,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _scaleController,
+      curve: Curves.elasticOut,
+    ));
+
+    // Start animations
+    // Start splash initialization when screen loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(splashNotifierProvider.notifier).startSplash();
+    });
+    _startAnimations();
+  }
+
+  void _startAnimations() async {
+    // Start scale animation first
+    await _scaleController.forward();
+    
+    // Then start rotation and fade
+    _rotationController.repeat();
+    _fadeController.forward();
+  }
+
+  @override
+  void dispose() {
+    _rotationController.dispose();
+    _fadeController.dispose();
+    _scaleController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final splashState = ref.watch(splashNotifierProvider);
+
+    // Listen to state changes
+    ref.listen<AsyncValue<bool>>(splashNotifierProvider, (previous, next) {
+      next.whenOrNull(
+        data: (isAuthenticated) {
+          // Navigate to appropriate screen based on auth state
+          if (isAuthenticated) {
+            Navigator.of(context).pushReplacementNamed('/coin-toss');
+          } else {
+            Navigator.of(context).pushReplacementNamed('/login');
+          }
+        },
+      );
+    });
+
+    return Scaffold(
+      body: Container(
+        decoration: BoxDecoration(
+          color: Colors.grey[900]!,
+        ),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Animated coin
+              AnimatedBuilder(
+                animation: Listenable.merge([
+                  _rotationAnimation,
+                  _scaleAnimation,
+                ]),
+                builder: (context, child) {
+                  return Transform.scale(
+                    scale: _scaleAnimation.value,
+                    child: Transform.rotate(
+                      angle: _rotationAnimation.value * 6.28, // 2π for full rotation
+                      child: Container(
+                        width: 140,
+                        height: 140,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.amber[600]!,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.amber.withValues(alpha: 0.4),
+                              blurRadius: 25,
+                              spreadRadius: 8,
+                              offset: const Offset(0, 5),
+                            ),
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.2),
+                              blurRadius: 15,
+                              spreadRadius: 3,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                          border: Border.all(
+                            color: Colors.amber[100]!,
+                            width: 4,
+                          ),
+                        ),
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            // Background circle
+                            Positioned(
+                              right: 12,
+                              top: 12,
+                              child: CircleAvatar(
+                                radius: 25,
+                                backgroundColor: Colors.amber[200],
+                              ),
+                            ),
+                            // Main coin
+                            const Text(
+                              'H',
+                              style: TextStyle(
+                                fontSize: 56,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.white,
+                                shadows: [
+                                  Shadow(
+                                    color: Colors.black54,
+                                    blurRadius: 8,
+                                    offset: Offset(3, 3),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+
+              const SizedBox(height: 40),
+
+              // App title with fade animation
+              AnimatedBuilder(
+                animation: _fadeAnimation,
+                builder: (context, child) {
+                  return Opacity(
+                    opacity: _fadeAnimation.value,
+                    child: Column(
+                      children: [
+                        Text(
+                          'COIN TOSS',
+                          style: TextStyle(
+                            fontSize: 42,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 6.0,
+                            color: Colors.white,
+                            shadows: [
+                              Shadow(
+                                color: Colors.amber.withValues(alpha: 0.6),
+                                blurRadius: 15,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+
+              const SizedBox(height: 60),
+
+              // Loading indicator
+              if (splashState.isLoading)
+                Column(
+                  children: [
+                    const CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.amber),
+                      strokeWidth: 3,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Initializing...',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.white60,
+                        letterSpacing: 1.0,
+                      ),
+                    ),
+                  ],
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

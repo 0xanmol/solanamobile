@@ -1,0 +1,190 @@
+import 'package:coin_toss/core/storage/local_storage.dart';
+import 'package:coin_toss/features/profile/presentation/profile_page.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:solana_mobile_client/solana_mobile_client.dart';
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:solana/solana.dart';
+
+class LoginState {
+  final bool isLoading;
+  final String? error;
+
+  LoginState({this.isLoading = false, this.error});
+
+  LoginState copyWith({bool? isLoading, String? error}) {
+    return LoginState(
+      isLoading: isLoading ?? this.isLoading,
+      error: error ?? this.error,
+    );
+  }
+}
+
+class LoginNotifier extends StateNotifier<LoginState> {
+  LoginNotifier(this.sharedPreferences) : super(LoginState());
+
+  final SharedPreferences sharedPreferences;
+
+  Future<void> connectWallet(BuildContext context) async {
+    state = state.copyWith(isLoading: true);
+
+    // Show custom loading dialog before MWA popup
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => _buildWalletConnectionDialog(context),
+    );
+
+    // Guard: MWA works only on Android
+    final bool isAndroid = !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
+    if (!isAndroid) {
+      Navigator.of(context).pop(); // Close dialog
+      const String msg = 'Mobile Wallet Adapter is supported only on Android. Please run on an Android device/emulator with an MWA-compatible wallet installed.';
+      state = state.copyWith(error: msg, isLoading: false);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(msg)));
+      }
+      return;
+    }
+
+    LocalAssociationScenario? session;
+    try {
+      session = await LocalAssociationScenario.create();
+      session.startActivityForResult(null).ignore();
+      final client = await session.start();
+      
+      // Update dialog to show "Opening wallet..."
+      _updateDialogMessage(context, "Opening your wallet...");
+      
+      final result = await client.authorize(
+        identityUri: Uri.parse('https://coin-toss.app'),
+        identityName: 'Coin Toss',
+        cluster: 'devnet',
+      );
+
+      if (result?.authToken != null && result?.publicKey != null) {
+        // Update dialog to show "Connecting..."
+        _updateDialogMessage(context, "Connecting to Solana...");
+        
+        final publicKey = Ed25519HDPublicKey(result!.publicKey!);
+        
+        await sharedPreferences.setString('auth_token', result.authToken);
+        await sharedPreferences.setString('public_key', publicKey.toBase58());
+        
+        Navigator.of(context).pop(); // Close dialog
+        
+        if (context.mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ProfilePage(
+                authToken: result.authToken,
+                publicKey: result.publicKey!,
+              ),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      Navigator.of(context).pop(); // Close dialog
+      state = state.copyWith(error: e.toString());
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Connection failed: ${e.toString()}'),
+            backgroundColor: Colors.red[600],
+          ),
+        );
+      }
+    } finally {
+      if (session != null) {
+        await session.close();
+      }
+      state = state.copyWith(isLoading: false);
+    }
+  }
+}
+
+final loginNotifierProvider = StateNotifierProvider<LoginNotifier, LoginState>((ref) {
+  final sharedPreferences = ref.watch(sharedPreferencesProvider);
+  return LoginNotifier(sharedPreferences);
+});
+
+Widget _buildWalletConnectionDialog(BuildContext context) {
+  return Dialog(
+    backgroundColor: Colors.transparent,
+    child: Container(
+      padding: const EdgeInsets.all(32),
+      decoration: BoxDecoration(
+        color: Colors.grey[850],
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.5),
+            blurRadius: 20,
+            spreadRadius: 5,
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Animated coin
+          TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.0, end: 1.0),
+            duration: const Duration(seconds: 2),
+            builder: (context, value, child) {
+              return Transform.rotate(
+                angle: value * 6.28,
+                child: Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [Colors.amber[300]!, Colors.amber[600]!, Colors.amber[800]!],
+                    ),
+                  ),
+                  child: const Icon(Icons.attach_money, size: 40, color: Colors.white),
+                ),
+              );
+            },
+          ),
+          
+          const SizedBox(height: 24),
+          
+          Text(
+            'Connecting to Wallet',
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          
+          const SizedBox(height: 12),
+          
+          Text(
+            'Please approve the connection in your wallet app',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Colors.white70,
+            ),
+          ),
+          
+          const SizedBox(height: 24),
+          
+          const CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.amber),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+void _updateDialogMessage(BuildContext context, String message) {
+  // This would update the dialog message dynamically
+  // Implementation depends on your state management approach
+}

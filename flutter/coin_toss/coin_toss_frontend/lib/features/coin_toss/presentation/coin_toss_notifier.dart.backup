@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:coin_toss/core/audio/audio_service.dart';
 import 'package:coin_toss/features/coin_toss/data/execute_toss_dto.dart';
 import 'package:coin_toss/features/coin_toss/domain/coin_toss_service.dart';
 import 'package:coin_toss/features/profile/data/profile_storage_service.dart';
@@ -9,9 +8,9 @@ import 'package:coin_toss/features/profile/domain/player.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:solana/anchor.dart';
+import 'package:solana/dto.dart';
 import 'package:solana/encoder.dart';
 import 'package:solana/solana.dart';
-import 'package:solana/dto.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:solana_mobile_client/solana_mobile_client.dart';
 
@@ -54,7 +53,8 @@ class CoinTossScreenState {
     bool? isSaving,
     bool? isFlipping,
     bool? tossResult,
-    bool? selectedSideIsHeads,
+    // use `ValueGetter` to allow passing null
+    ValueGetter<bool?>? selectedSideIsHeads,
     double? balance,
     bool? isLoadingBalance,
     String? error,
@@ -68,7 +68,9 @@ class CoinTossScreenState {
       isSaving: isSaving ?? this.isSaving,
       isFlipping: isFlipping ?? this.isFlipping,
       tossResult: tossResult ?? this.tossResult,
-      selectedSideIsHeads: selectedSideIsHeads ?? this.selectedSideIsHeads,
+      selectedSideIsHeads: selectedSideIsHeads != null
+          ? selectedSideIsHeads()
+          : this.selectedSideIsHeads,
       balance: balance ?? this.balance,
       isLoadingBalance: isLoadingBalance ?? this.isLoadingBalance,
       error: error ?? this.error,
@@ -80,7 +82,6 @@ class CoinTossScreenState {
 class CoinTossScreenNotifier extends StateNotifier<CoinTossScreenState> with WidgetsBindingObserver {
   final ProfileStorageService _profileStorageService;
   final CoinTossService _coinTossService;
-  final AudioService _audioService = AudioService();
   
   // Store pending results while waiting for animation
   bool? _pendingTossResult;
@@ -97,7 +98,6 @@ class CoinTossScreenNotifier extends StateNotifier<CoinTossScreenState> with Wid
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _audioService.dispose();
     super.dispose();
   }
 
@@ -133,7 +133,7 @@ class CoinTossScreenNotifier extends StateNotifier<CoinTossScreenState> with Wid
 
   void selectSide(bool isHeads) {
     state = state.copyWith(
-      selectedSideIsHeads: isHeads,
+      selectedSideIsHeads: () => isHeads,
       message: '',
       error: null,
     );
@@ -200,7 +200,7 @@ class CoinTossScreenNotifier extends StateNotifier<CoinTossScreenState> with Wid
 
     state = state.copyWith(
       isSaving: true,
-      message: 'Preparing toss...',
+      message: 'Submitting...',
       error: null,
     );
 
@@ -340,9 +340,6 @@ class CoinTossScreenNotifier extends StateNotifier<CoinTossScreenState> with Wid
       message: '',
     );
 
-    // Play coin flip sound when animation starts
-    _audioService.playCoinFlipSound();
-
     // Reset pending values
     _pendingTossResult = null;
     _pendingWon = null;
@@ -354,7 +351,7 @@ class CoinTossScreenNotifier extends StateNotifier<CoinTossScreenState> with Wid
         state = state.copyWith(
           isFlipping: false,
           message: _pendingWon == true ? 'You Won!' : 'You Lost!',
-          selectedSideIsHeads: null,
+          selectedSideIsHeads: () => null,
         );
       }
     });
