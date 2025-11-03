@@ -16,6 +16,8 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { logout, getStoredWalletAuth } from "@/apis/auth";
+import { disconnectWallet } from "@/services/wallet";
 
 export default function AccountScreen() {
   const colorScheme = useColorScheme();
@@ -78,14 +80,31 @@ export default function AccountScreen() {
     }
   };
 
-  const handleLogout = () => {
-    Alert.alert("Logout", "Are you sure you want to logout?", [
+  const handleLogout = async () => {
+    Alert.alert("Logout", "Are you sure you want to disconnect your wallet and logout?", [
       { text: "Cancel", style: "cancel" },
       {
         text: "Logout",
         style: "destructive",
-        onPress: () => {
-          router.replace("/login");
+        onPress: async () => {
+          try {
+            // Get stored wallet auth to disconnect
+            const cachedAuth = await getStoredWalletAuth();
+            if (cachedAuth) {
+              // Disconnect wallet (deauthorize)
+              await disconnectWallet(cachedAuth.authToken);
+            }
+
+            // Logout from backend and clear all local data
+            await logout();
+
+            // Navigate to login screen
+            router.replace("/login");
+          } catch (error) {
+            console.error("Logout error:", error);
+            // Still navigate to login even if there's an error
+            router.replace("/login");
+          }
         },
       },
     ]);

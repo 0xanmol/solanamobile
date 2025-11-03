@@ -2,7 +2,7 @@ import { Colors } from '@/constants/colors';
 import { BorderRadius, Shadow, Spacing } from '@/constants/spacing';
 import { FontFamily, FontSize } from '@/constants/typography';
 import { router } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     ActivityIndicator,
     Alert,
@@ -12,23 +12,80 @@ import {
     View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { connectWallet } from '@/apis/auth';
-
-// Hardcoded Solana public key for testing
-const HARDCODED_PUBKEY = '7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU';
+import { connectWallet, storeWalletAuth, getStoredWalletAuth, clearWalletAuth } from '@/apis/auth';
+import { authorizeWallet, reauthorizeWallet } from '@/services/wallet';
 
 export default function LoginScreen() {
   const [isConnecting, setIsConnecting] = useState(false);
+  const [isCheckingSession, setIsCheckingSession] = useState(false); // Disabled for now
+
+  // Check for cached wallet session on mount
+  // Temporarily disabled - enable after testing basic wallet connection
+  useEffect(() => {
+    // checkCachedSession();
+    setIsCheckingSession(false);
+  }, []);
+
+  const checkCachedSession = async () => {
+    try {
+      const cachedAuth = await getStoredWalletAuth();
+
+      if (cachedAuth) {
+        console.log('Found cached wallet session, attempting reauthorization...');
+
+        try {
+          // Add timeout to prevent infinite loading
+          const reauthorizePromise = reauthorizeWallet(cachedAuth.authToken);
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Reauthorization timeout')), 5000)
+          );
+
+          const walletAuth = await Promise.race([reauthorizePromise, timeoutPromise]) as any;
+          console.log('Reauthorization successful:', { pubkey: walletAuth.pubkey });
+
+          // Update stored auth with new token (token may have been refreshed)
+          await storeWalletAuth(walletAuth.authToken, walletAuth.pubkey);
+
+          // Connect to backend
+          const response = await connectWallet(walletAuth.pubkey);
+
+          if (response.success && response.data && !response.data.requiresProfileCompletion) {
+            console.log('Session restored successfully');
+            // Navigate directly to main app
+            router.replace('/(tabs)/groups');
+            return;
+          }
+        } catch (error) {
+          console.log('Reauthorization failed, user needs to login again:', error);
+          // Clear invalid cached auth
+          await clearWalletAuth();
+          // Fall through to show login screen
+        }
+      }
+    } catch (error) {
+      console.error('Session check error:', error);
+    } finally {
+      setIsCheckingSession(false);
+    }
+  };
 
   const handleConnectWallet = async () => {
     setIsConnecting(true);
 
     try {
-      console.log('Connecting wallet with pubkey:', HARDCODED_PUBKEY);
-      const response = await connectWallet(HARDCODED_PUBKEY);
+      // Step 1: Authorize wallet using Mobile Wallet Adapter
+      console.log('Requesting wallet authorization...');
+      const walletAuth = await authorizeWallet();
+      console.log('Wallet authorized:', { pubkey: walletAuth.pubkey });
+
+      // Step 2: Store wallet auth credentials for session persistence
+      await storeWalletAuth(walletAuth.authToken, walletAuth.pubkey);
+
+      // Step 3: Connect to backend with the wallet pubkey
+      const response = await connectWallet(walletAuth.pubkey);
 
       if (response.success && response.data) {
-        console.log('Wallet connected:', response.data);
+        console.log('Backend connection successful:', response.data);
 
         if (response.data.requiresProfileCompletion) {
           // New user - navigate to profile completion
@@ -46,15 +103,37 @@ export default function LoginScreen() {
           );
         }
       } else {
-        Alert.alert('Connection Failed', response.message || 'Failed to connect wallet');
+        Alert.alert('Connection Failed', response.message || 'Failed to connect to backend');
       }
     } catch (error: any) {
       console.error('Wallet connection error:', error);
-      Alert.alert('Error', 'Failed to connect wallet. Please try again.');
+
+      let errorMessage = 'Failed to connect wallet. Please try again.';
+
+      // Provide more specific error messages
+      if (error.message?.includes('user declined')) {
+        errorMessage = 'Wallet authorization was cancelled.';
+      } else if (error.message?.includes('no wallet')) {
+        errorMessage = 'No wallet app found. Please install a Solana wallet.';
+      }
+
+      Alert.alert('Error', errorMessage);
     } finally {
       setIsConnecting(false);
     }
   };
+
+  // Show loading screen while checking for cached session
+  if (isCheckingSession) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+        <View style={[styles.content, styles.loadingContainer]}>
+          <ActivityIndicator size="large" color="#14F195" />
+          <Text style={styles.loadingText}>Checking for saved session...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -98,7 +177,7 @@ export default function LoginScreen() {
           </TouchableOpacity>
 
           <Text style={styles.testNote}>
-            (Using test wallet for demo)
+            Connect with Phantom, Solflare, or any Solana wallet
           </Text>
 
           {/* Footer Links */}
@@ -132,6 +211,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingTop: 60,
     paddingBottom: Spacing['2xl'],
+  },
+  loadingContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: Spacing.lg,
+  },
+  loadingText: {
+    fontSize: FontSize.md,
+    color: Colors.textSecondary,
+    fontFamily: FontFamily.poppinsRegular,
   },
   logoContainer: {
     alignItems: 'center',

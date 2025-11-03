@@ -250,6 +250,7 @@ export default function ActivityScreen() {
 
         <FabButtons
           onAddExpensePress={() => router.push('/add-expense')}
+          isTabScreen={true}
         />
       </SafeAreaView>
 

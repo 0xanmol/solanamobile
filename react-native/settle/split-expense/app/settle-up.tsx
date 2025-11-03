@@ -97,6 +97,7 @@ export default function SettleUpScreen() {
         {/* Floating Action Buttons */}
         <FabButtons
           onAddExpensePress={() => router.push('/add-expense')}
+          isTabScreen={false}
         />
       </SafeAreaView>
     </TabLayoutWrapper>

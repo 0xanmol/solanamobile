@@ -241,6 +241,7 @@ export default function GroupsScreen() {
 
         <FabButtons
           onAddExpensePress={() => router.push('/add-expense')}
+          isTabScreen={true}
         />
       </SafeAreaView>
 

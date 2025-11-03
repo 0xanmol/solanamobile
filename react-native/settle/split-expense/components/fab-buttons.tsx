@@ -1,14 +1,21 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface FabButtonsProps {
   onAddExpensePress?: () => void;
+  isTabScreen?: boolean; // Whether this is on a screen with bottom tab bar
 }
 
-export default function FabButtons({ onAddExpensePress }: FabButtonsProps) {
+export default function FabButtons({ onAddExpensePress, isTabScreen = false }: FabButtonsProps) {
+  const insets = useSafeAreaInsets();
+
+  // For tab screens, add tab bar height (75). For others, just safe area.
+  const bottomOffset = isTabScreen ? 12 + insets.bottom : 24 + insets.bottom;
+
   return (
-    <View style={styles.fabContainer} pointerEvents="box-none">
+    <View style={[styles.fabContainer, { bottom: bottomOffset }]} pointerEvents="box-none">
       <TouchableOpacity
         activeOpacity={0.8}
         style={[styles.fabLarge, styles.fabShadow]}
@@ -24,7 +31,6 @@ export default function FabButtons({ onAddExpensePress }: FabButtonsProps) {
 const styles = StyleSheet.create({
   fabContainer: {
     position: 'absolute',
-    bottom: 12,
     right: 16,
     gap: 8,
     alignItems: 'flex-end',

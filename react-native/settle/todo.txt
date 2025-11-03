@@ -6,4 +6,11 @@ TODO
 [] Replace all api call mock data with actual calls in their functions
 [] safe area for bottom of the screen
 [] fix adding people to group
-[] editing Name of Groupo takes to create group page
+[] editing Name of Group takes to create group page
+[] search button does jackshit in friends,activity and groups tab
+[] The filters dont dont anything in group screen
+[] remove most of the garbage in settings screen. Just show details of person
+[] Joining group etc with share code options needs to be added, add button to join group in group tab
+[] How to accept friend requests?
+[] Remove chart from Group screen
+[] 

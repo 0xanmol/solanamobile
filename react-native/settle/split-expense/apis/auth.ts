@@ -77,6 +77,53 @@ export const completeProfile = async (data: CompleteProfileData): Promise<AuthRe
 };
 
 /**
+ * Store wallet authorization data in AsyncStorage
+ */
+export const storeWalletAuth = async (authToken: string, address: string): Promise<void> => {
+  try {
+    await AsyncStorage.multiSet([
+      ['wallet_auth_token', authToken],
+      ['wallet_address', address],
+    ]);
+  } catch (error) {
+    console.error('[API] Store wallet auth error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get stored wallet authorization data from AsyncStorage
+ */
+export const getStoredWalletAuth = async (): Promise<{ authToken: string; address: string } | null> => {
+  try {
+    const [[, authToken], [, address]] = await AsyncStorage.multiGet([
+      'wallet_auth_token',
+      'wallet_address',
+    ]);
+
+    if (authToken && address) {
+      return { authToken, address };
+    }
+
+    return null;
+  } catch (error) {
+    console.error('[API] Get stored wallet auth error:', error);
+    return null;
+  }
+};
+
+/**
+ * Clear wallet authorization data from AsyncStorage
+ */
+export const clearWalletAuth = async (): Promise<void> => {
+  try {
+    await AsyncStorage.multiRemove(['wallet_auth_token', 'wallet_address']);
+  } catch (error) {
+    console.error('[API] Clear wallet auth error:', error);
+  }
+};
+
+/**
  * User logout
  */
 export const logout = async (): Promise<{ success: boolean; message: string }> => {
@@ -85,6 +132,8 @@ export const logout = async (): Promise<{ success: boolean; message: string }> =
 
     // Clear local auth data
     await clearAuthData();
+    // Clear wallet auth data
+    await clearWalletAuth();
 
     return response.data;
   } catch (error: any) {
@@ -92,6 +141,7 @@ export const logout = async (): Promise<{ success: boolean; message: string }> =
 
     // Clear local data anyway
     await clearAuthData();
+    await clearWalletAuth();
 
     return {
       success: true,

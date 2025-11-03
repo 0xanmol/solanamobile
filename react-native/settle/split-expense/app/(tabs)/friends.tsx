@@ -194,6 +194,7 @@ export default function FriendsScreen() {
 
         <FabButtons
           onAddExpensePress={() => console.log('Add expense pressed')}
+          isTabScreen={true}
         />
 
         {/* Filter Popup */}

@@ -182,6 +182,7 @@ export default function GroupDetailScreen() {
         </ScrollView>
                 <FabButtons
                   onAddExpensePress={() => router.push({ pathname: '/add-expense', params: { groupId: id } })}
+                  isTabScreen={false}
                 />
       </SafeAreaView>
     </TabLayoutWrapper>
