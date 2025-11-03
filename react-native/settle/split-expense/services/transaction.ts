@@ -1,7 +1,4 @@
-/**
- * Transaction service for Solana payments
- */
-
+import axios from 'axios';
 import { transact, Web3MobileWallet } from '@solana-mobile/mobile-wallet-adapter-protocol-web3js';
 import {
   Connection,
@@ -15,6 +12,7 @@ import { getStoredWalletAuth } from '@/apis/auth';
 
 // Solana RPC endpoint (devnet)
 const SOLANA_RPC_ENDPOINT = 'https://api.devnet.solana.com';
+const COINGECKO_PRICE_API = 'https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd';
 
 export interface SendSolResult {
   success: boolean;
@@ -23,21 +21,52 @@ export interface SendSolResult {
 }
 
 /**
+ * Fetches the current SOL to USD conversion rate from CoinGecko
+ */
+export const getSolToUsdRate = async (): Promise<number> => {
+  try {
+    const response = await axios.get(COINGECKO_PRICE_API);
+    const rate = response.data.solana.usd;
+    if (!rate) {
+      throw new Error('Could not fetch SOL to USD rate.');
+    }
+    console.log(`Current SOL/USD rate: ${rate}`);
+    return rate;
+  } catch (error) {
+    console.error('Error fetching SOL to USD rate:', error);
+    const fallbackRate = 50; // Example fallback
+    console.warn(`Using fallback SOL/USD rate: ${fallbackRate}`);
+    return fallbackRate;
+  }
+};
+
+/**
+ * Converts a USD amount to its SOL equivalent
+ */
+export const convertUsdToSol = (amountInUsd: number, solToUsdRate: number): number => {
+  if (solToUsdRate <= 0) return 0;
+  return amountInUsd / solToUsdRate;
+};
+
+/**
+ * Converts a SOL amount to its USD equivalent
+ */
+export const convertSolToUsd = (amountInSol: number, solToUsdRate: number): number => {
+  return amountInSol * solToUsdRate;
+};
+
+
+/**
  * Send SOL to another wallet address
  * @param toAddress - Recipient's wallet address (pubkey)
- * @param amountInSol - Amount in SOL (e.g., 0.5 for half a SOL)
+ * @param amountInUsd - Amount in USD to send
  * @returns Transaction signature if successful
- */
-/**
- * Validate if a string is a valid Solana public key
  */
 const isValidSolanaAddress = (address: string): boolean => {
   try {
-    // Check basic format
     if (!address || address.length < 32 || address.length > 44) {
       return false;
     }
-    // Try to create a PublicKey - will throw if invalid
     new PublicKey(address);
     return true;
   } catch {
@@ -47,16 +76,14 @@ const isValidSolanaAddress = (address: string): boolean => {
 
 export const sendSol = async (
   toAddress: string,
-  amountInSol: number
+  amountInUsd: number
 ): Promise<SendSolResult> => {
   try {
-    // Get cached wallet auth
     const cachedAuth = await getStoredWalletAuth();
     if (!cachedAuth) {
       throw new Error('No wallet connected. Please connect your wallet first.');
     }
 
-    // Validate addresses
     if (!isValidSolanaAddress(cachedAuth.address)) {
       throw new Error('Your wallet address is invalid. Please reconnect your wallet.');
     }
@@ -67,50 +94,49 @@ export const sendSol = async (
       );
     }
 
-    // Create connection to Solana
+    const solPriceInUsd = await getSolToUsdRate();
+    if (!solPriceInUsd) {
+        throw new Error('Could not determine SOL to USD conversion rate.');
+    }
+
+    const amountInSol = convertUsdToSol(amountInUsd, solPriceInUsd);
+
     const connection = new Connection(SOLANA_RPC_ENDPOINT, 'confirmed');
 
-    // Convert addresses to PublicKey
     const fromPubkey = new PublicKey(cachedAuth.address);
     const toPubkey = new PublicKey(toAddress);
 
-    // Convert SOL to lamports (1 SOL = 1,000,000,000 lamports)
     const lamports = Math.floor(amountInSol * LAMPORTS_PER_SOL);
 
     console.log('Creating SOL transfer transaction:', {
       from: fromPubkey.toBase58(),
       to: toPubkey.toBase58(),
-      amount: amountInSol,
+      amountInUsd,
+      amountInSol,
       lamports,
     });
 
-    // Get recent blockhash
     const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
 
-    // Create transfer instruction
     const transferInstruction = SystemProgram.transfer({
       fromPubkey,
       toPubkey,
       lamports,
     });
 
-    // Create transaction
     const transaction = new Transaction({
       feePayer: fromPubkey,
       blockhash,
       lastValidBlockHeight,
     }).add(transferInstruction);
 
-    // Sign and send transaction using Mobile Wallet Adapter
     const signature = await transact(async (wallet: Web3MobileWallet) => {
-      // Reauthorize with cached token
       await wallet.authorize({
         cluster: SOLANA_CLUSTER,
         identity: APP_IDENTITY,
         auth_token: cachedAuth.authToken,
       });
 
-      // Sign and send transaction
       const signedTransactions = await wallet.signAndSendTransactions({
         transactions: [transaction],
       });
@@ -120,7 +146,6 @@ export const sendSol = async (
 
     console.log('Transaction sent successfully:', signature);
 
-    // Wait for confirmation
     const confirmation = await connection.confirmTransaction({
       signature,
       blockhash,

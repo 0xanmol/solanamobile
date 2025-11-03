@@ -152,11 +152,11 @@ export default function BalancesScreen() {
         <View style={newStyles.balanceInfo}>
           {isOwedToYou ? (
             <Text style={newStyles.balanceText}>
-              <Text style={newStyles.bold}>{balance.userName}</Text> owes you <Text style={[newStyles.bold, newStyles.green]}>{balance.amount.toFixed(2)} SOL</Text>
+              <Text style={newStyles.bold}>{balance.userName}</Text> owes you <Text style={[newStyles.bold, newStyles.green]}>{balance.amount.toFixed(2)} USD</Text>
             </Text>
           ) : (
             <Text style={newStyles.balanceText}>
-              You owe <Text style={newStyles.bold}>{balance.userName}</Text> <Text style={[newStyles.bold, newStyles.red]}>{balance.amount.toFixed(2)} SOL</Text>
+              You owe <Text style={newStyles.bold}>{balance.userName}</Text> <Text style={[newStyles.bold, newStyles.red]}>{balance.amount.toFixed(2)} USD</Text>
             </Text>
           )}
         </View>
