@@ -95,7 +95,7 @@ router.post('/', authMiddleware, async (req, res) => {
       groupId,
       participants = []
     } = req.body;
-
+    
     const expenseId = generateId();
     const expenseDate = formatDate(date) || formatDate(new Date());
 

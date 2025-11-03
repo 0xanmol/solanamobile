@@ -141,7 +141,10 @@ export default function GroupDetailScreen() {
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.navButtonsScrollView} contentContainerStyle={styles.navButtonsContainer}>
               <TouchableOpacity style={[styles.navButton, activeTab === 'settle-up' && styles.activeNavButton]} onPress={() => setActiveTab('settle-up')}><Text style={[styles.navButtonText, activeTab === 'settle-up' && styles.activeNavButtonText]}>Settle up</Text></TouchableOpacity>
               <TouchableOpacity style={[styles.navButton, activeTab === 'charts' && styles.activeNavButton]} onPress={() => setActiveTab('charts')}><MaterialIcons name="diamond" size={20} color="#8B5CF6" /><Text style={[styles.navButtonText, activeTab === 'charts' && styles.activeNavButtonText]}>Charts</Text></TouchableOpacity>
-              <TouchableOpacity style={[styles.navButton, activeTab === 'balances' && styles.activeNavButton]} onPress={() => router.push('/balances')}><Text style={[styles.navButtonText, activeTab === 'balances' && styles.activeNavButtonText]}>Balances</Text></TouchableOpacity>
+                            <TouchableOpacity
+                              style={[styles.navButton, activeTab === 'balances' && styles.activeNavButton]}
+                              onPress={() => router.push({ pathname: '/balances', params: { groupId: id } })}
+                            ><Text style={[styles.navButtonText, activeTab === 'balances' && styles.activeNavButtonText]}>Balances</Text></TouchableOpacity>
             </ScrollView>
           {activeTab === 'settle-up' && renderSettleUpContent()}
           {activeTab === 'charts' && (<View style={styles.mainBody}><Text style={styles.title}>Charts</Text><Text style={styles.subtitle}>Charts content coming soon</Text></View>)}

@@ -7,11 +7,11 @@ import apiClient from '../utils/api-client';
 
 export interface Balance {
   id: string;
+  userId: string;
+  userName: string;
+  userAvatar?: string;
+  amount: number;
   type: 'gets_back' | 'owes';
-  person: string;
-  amount: string;
-  creditor?: string;
-  color: string;
 }
 
 export interface Settlement {

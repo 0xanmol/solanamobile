@@ -14,9 +14,9 @@ const calculateBalances = async (userId, groupId = null) => {
     SELECT e.*, ep.user_id, ep.share
     FROM expenses e
     INNER JOIN expense_participants ep ON e.id = ep.expense_id
-    WHERE e.id IN (
+    WHERE (e.id IN (
       SELECT expense_id FROM expense_participants WHERE user_id = ?
-    ) OR e.paid_by = ?
+    ) OR e.paid_by = ?)
   `;
   const params = [userId, userId];
 
