@@ -3,6 +3,7 @@
  * Wallet-based authentication with Solana public keys
  */
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import apiClient, { saveAuthToken, clearAuthData } from '../utils/api-client';
 
 export interface ConnectWalletData {
@@ -39,9 +40,14 @@ export const connectWallet = async (pubkey: string): Promise<AuthResponse> => {
   try {
     const response = await apiClient.post('/auth/connect', { pubkey });
 
-    // Save token if provided
-    if (response.data.success && response.data.data?.token) {
-      await saveAuthToken(response.data.data.token);
+    // Save token and user data if provided
+    if (response.data.success && response.data.data) {
+      if (response.data.data.token) {
+        await saveAuthToken(response.data.data.token);
+      }
+      if (response.data.data.user) {
+        await AsyncStorage.setItem('user_data', JSON.stringify(response.data.data.user));
+      }
     }
 
     return response.data;

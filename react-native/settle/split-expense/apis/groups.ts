@@ -50,7 +50,7 @@ export const getGroups = async (): Promise<{ success: boolean, data?: Group[] } 
 /**
  * Get single group details
  */
-export const getGroup = async (id: string): Promise<Group> => {
+export const getGroup = async (id: string): Promise<{ success: true, data: Group } | { success: false, message: string }> => {
   try {
     const response = await apiClient.get(`/groups/${id}`);
     return response.data;

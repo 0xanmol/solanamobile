@@ -40,7 +40,6 @@ router.get('/', authMiddleware, async (req, res) => {
       );
       expense.participants = participants;
     }
-
     res.json({ success: true, data: expenses });
   } catch (error) {
     console.error('Get expenses error:', error);

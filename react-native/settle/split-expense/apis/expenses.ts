@@ -5,16 +5,28 @@
 
 import apiClient from '../utils/api-client';
 
+export interface Participant {
+  id: string;
+  expense_id: string;
+  user_id: string;
+  share: number;
+  paid_share: number;
+  name: string;
+  pubkey: string;
+}
+
 export interface Expense {
   id: string;
   description: string;
   amount: number;
   currency: string;
   date: string;
-  paidBy: string;
-  groupId?: string;
-  participants: string[];
-  splitMethod: 'equally' | 'unequally' | 'percentages' | 'shares' | 'adjustment';
+  paid_by: string;
+  paid_by_name: string;
+  paid_by_pubkey: string;
+  group_id?: string;
+  participants: Participant[];
+  split_type: 'equally' | 'unequally' | 'percentage' | 'shares' | 'adjustment';
   notes?: string;
   category?: string;
 }
@@ -58,7 +70,7 @@ export const createExpense = async (data: CreateExpenseData): Promise<{ success:
 /**
  * Get expenses
  */
-export const getExpenses = async (groupId?: string): Promise<Expense[]> => {
+export const getExpenses = async (groupId?: string): Promise<{ success: true, data: Expense[] } | { success: false, message: string }> => {
   try {
     const endpoint = groupId ? `/expenses?groupId=${groupId}` : '/expenses';
     const response = await apiClient.get(endpoint);
