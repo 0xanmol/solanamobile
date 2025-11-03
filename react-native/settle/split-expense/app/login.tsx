@@ -108,14 +108,8 @@ export default function LoginScreen() {
     } catch (error: any) {
       console.error('Wallet connection error:', error);
 
-      let errorMessage = 'Failed to connect wallet. Please try again.';
-
-      // Provide more specific error messages
-      if (error.message?.includes('user declined')) {
-        errorMessage = 'Wallet authorization was cancelled.';
-      } else if (error.message?.includes('no wallet')) {
-        errorMessage = 'No wallet app found. Please install a Solana wallet.';
-      }
+      // Use the improved error messages from the wallet service
+      const errorMessage = error.message || 'Failed to connect wallet. Please try again.';
 
       Alert.alert('Error', errorMessage);
     } finally {

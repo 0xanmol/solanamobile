@@ -1,3 +1,6 @@
+// IMPORTANT: Must be imported before @solana/web3.js to provide crypto.getRandomValues()
+import 'react-native-get-random-values';
+
 import { Montserrat_400Regular, Montserrat_500Medium, Montserrat_600SemiBold, Montserrat_700Bold, useFonts as useMontserrat } from '@expo-google-fonts/montserrat';
 import { Poppins_400Regular, Poppins_500Medium, Poppins_600SemiBold, Poppins_700Bold, useFonts as usePoppins } from '@expo-google-fonts/poppins';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';

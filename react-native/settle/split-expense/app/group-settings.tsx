@@ -196,7 +196,10 @@ export default function GroupSettingsScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Group members</Text>
 
-            <TouchableOpacity style={styles.optionRow} onPress={() => router.push('/add-friends')}>
+            <TouchableOpacity
+              style={styles.optionRow}
+              onPress={() => router.push(`/add-group-members?groupId=${groupId}`)}
+            >
               <MaterialIcons name="group-add" size={24} color="#6B7280" />
               <Text style={styles.optionText}>Add people to group</Text>
               <MaterialIcons name="chevron-right" size={24} color="#D1D5DB" />

@@ -24,7 +24,7 @@ export interface Contact {
 /**
  * Get all friends
  */
-export const getFriends = async (): Promise<Friend[]> => {
+export const getFriends = async (): Promise<{ success: boolean; data?: Friend[]; message?: string }> => {
   try {
     const response = await apiClient.get('/friends');
     return response.data;
@@ -33,7 +33,7 @@ export const getFriends = async (): Promise<Friend[]> => {
     return {
       success: false,
       message: error.response?.data?.message || 'Failed to fetch friends'
-    } as any;
+    };
   }
 };
 

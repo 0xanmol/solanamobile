@@ -9,6 +9,7 @@ export interface Balance {
   id: string;
   userId: string;
   userName: string;
+  userPubkey: string;
   userAvatar?: string;
   amount: number;
   type: 'gets_back' | 'owes';
@@ -72,14 +73,23 @@ export const settleUp = async (data: {
   notes?: string;
 }): Promise<{ success: boolean; settlement: Settlement }> => {
   try {
-    const response = await apiClient.post('/balances/settle', data);
+    // Backend expects fromUserId and toUserId, not from and to
+    const requestData = {
+      fromUserId: data.from,
+      toUserId: data.to,
+      amount: data.amount,
+      groupId: data.groupId,
+      date: data.date,
+      notes: data.notes,
+    };
+    const response = await apiClient.post('/balances/settle', requestData);
     return response.data;
   } catch (error: any) {
     console.error('Error settling up:', error);
     return {
       success: false,
       message: error.response?.data?.message || 'Failed to process settlement'
-    };
+    } as any;
   }
 };
 

@@ -34,15 +34,39 @@ export default function AddFriendsScreen() {
         return;
       }
 
-      // Basic pubkey validation (should be reasonably long, alphanumeric)
+      // Validate Solana public key format
       const trimmedPubkey = pubkey.trim();
-      if (trimmedPubkey.length < 20) {
-        Alert.alert("Error", "Public key seems too short. Please enter a valid public key.");
+
+      // Check length (Solana addresses are typically 32-44 characters)
+      if (trimmedPubkey.length < 32 || trimmedPubkey.length > 44) {
+        Alert.alert(
+          "Invalid Public Key",
+          "Solana public keys must be 32-44 characters long. Please check the address and try again."
+        );
         return;
       }
 
-      if (!/^[A-Za-z0-9]+$/.test(trimmedPubkey)) {
-        Alert.alert("Error", "Public key should only contain letters and numbers");
+      // Check for base58 characters only (no 0, O, I, l)
+      if (!/^[1-9A-HJ-NP-Za-km-z]+$/.test(trimmedPubkey)) {
+        Alert.alert(
+          "Invalid Public Key",
+          "Public key contains invalid characters. Solana addresses use base58 encoding (no 0, O, I, or l characters)."
+        );
+        return;
+      }
+
+      // Try to validate it's a proper Solana address
+      try {
+        // This is a basic check - ideally would use @solana/web3.js PublicKey
+        const invalidChars = trimmedPubkey.match(/[^1-9A-HJ-NP-Za-km-z]/g);
+        if (invalidChars) {
+          throw new Error(`Invalid characters: ${invalidChars.join(', ')}`);
+        }
+      } catch (error) {
+        Alert.alert(
+          "Invalid Public Key",
+          "Please enter a valid Solana wallet address."
+        );
         return;
       }
 
@@ -206,7 +230,7 @@ export default function AddFriendsScreen() {
                 numberOfLines={2}
               />
               <Text style={[styles.helperText, styles.fontRegular]}>
-                Public keys are typically 32-44 characters long
+                Must be a valid Solana address (32-44 characters, base58 encoded). Example: 7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU
               </Text>
             </View>
           </>

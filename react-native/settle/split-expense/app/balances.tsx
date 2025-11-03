@@ -4,10 +4,11 @@ import { styles } from '@/styles/balances.styles'; // Assuming this file will be
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useState, useCallback, useMemo } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View, ActivityIndicator } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getBalances, settleUp, Balance } from '@/apis/balances';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { sendSol } from '@/services/transaction';
 
 export default function BalancesScreen() {
   const router = useRouter();
@@ -16,6 +17,7 @@ export default function BalancesScreen() {
   const [balances, setBalances] = useState<Balance[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
+  const [settlingId, setSettlingId] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -59,13 +61,64 @@ export default function BalancesScreen() {
     return { youOwe, owedToYou, totalYouOwe, totalOwedToYou, netBalance };
   }, [balances]);
 
-  const handleSettleUp = async (debtorId: string, creditorId: string, amount: number) => {
-    const result = await settleUp({ from: debtorId, to: creditorId, amount });
-    if (result.success) {
-      alert('Settlement recorded!');
-      fetchData(); // Refresh balances
-    } else {
-      alert(`Failed to settle up: ${result.message}`);
+  const handleSettleUp = async (
+    debtorId: string,
+    creditorId: string,
+    amount: number,
+    recipientPubkey: string,
+    balanceId: string
+  ) => {
+    // Prevent multiple simultaneous settlements
+    if (settlingId) {
+      Alert.alert('Please wait', 'A settlement is already in progress');
+      return;
+    }
+
+    setSettlingId(balanceId);
+
+    try {
+      // Step 1: Send SOL transaction
+      console.log('Sending SOL transaction...', { recipientPubkey, amount });
+      const txResult = await sendSol(recipientPubkey, amount);
+
+      if (!txResult.success) {
+        Alert.alert('Transaction Failed', txResult.message || 'Failed to send SOL');
+        return;
+      }
+
+      console.log('Transaction successful:', txResult.signature);
+
+      // Step 2: Record settlement in backend with transaction signature
+      const settlementData = {
+        from: debtorId,
+        to: creditorId,
+        amount,
+        // TODO: Update backend to accept transaction signature
+        // transactionSignature: txResult.signature
+      };
+      console.log('Sending settlement to backend:', settlementData);
+
+      const result = await settleUp(settlementData);
+
+      if (result.success) {
+        Alert.alert(
+          'Success!',
+          `Settlement completed successfully!\nTransaction: ${txResult.signature?.substring(0, 8)}...`
+        );
+        fetchData(); // Refresh balances
+      } else {
+        Alert.alert(
+          'Warning',
+          `Transaction sent but failed to record in backend: ${result.message}\nTransaction: ${txResult.signature}`
+        );
+        // Still refresh to see if backend state changed
+        fetchData();
+      }
+    } catch (error: any) {
+      console.error('Settlement error:', error);
+      Alert.alert('Error', error.message || 'Settlement failed. Please try again.');
+    } finally {
+      setSettlingId(null);
     }
   };
 
@@ -92,24 +145,37 @@ export default function BalancesScreen() {
     const isOwedToYou = balance.type === 'gets_back';
     if (!currentUser) return null;
 
+    const isSettling = settlingId === balance.id;
+
     return (
       <View key={balance.id} style={newStyles.balanceRow}>
         <View style={newStyles.balanceInfo}>
           {isOwedToYou ? (
             <Text style={newStyles.balanceText}>
-              <Text style={newStyles.bold}>{balance.userName}</Text> owes you <Text style={[newStyles.bold, newStyles.green]}>${balance.amount.toFixed(2)}</Text>
+              <Text style={newStyles.bold}>{balance.userName}</Text> owes you <Text style={[newStyles.bold, newStyles.green]}>{balance.amount.toFixed(2)} SOL</Text>
             </Text>
           ) : (
             <Text style={newStyles.balanceText}>
-              You owe <Text style={newStyles.bold}>{balance.userName}</Text> <Text style={[newStyles.bold, newStyles.red]}>${balance.amount.toFixed(2)}</Text>
+              You owe <Text style={newStyles.bold}>{balance.userName}</Text> <Text style={[newStyles.bold, newStyles.red]}>{balance.amount.toFixed(2)} SOL</Text>
             </Text>
           )}
         </View>
-        <TouchableOpacity 
-          style={newStyles.settleButton}
-          onPress={() => handleSettleUp(isOwedToYou ? balance.userId : currentUser.id, isOwedToYou ? currentUser.id : balance.userId, balance.amount)}
+        <TouchableOpacity
+          style={[newStyles.settleButton, isSettling && newStyles.settleButtonDisabled]}
+          onPress={() => handleSettleUp(
+            isOwedToYou ? balance.userId : currentUser.id,
+            isOwedToYou ? currentUser.id : balance.userId,
+            balance.amount,
+            balance.userPubkey,
+            balance.id
+          )}
+          disabled={isSettling || settlingId !== null}
         >
-          <Text style={newStyles.settleButtonText}>Settle up</Text>
+          {isSettling ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <Text style={newStyles.settleButtonText}>Settle up</Text>
+          )}
         </TouchableOpacity>
       </View>
     );
@@ -179,6 +245,7 @@ const newStyles = StyleSheet.create({
   balanceText: { fontSize: 16, color: '#1F2937' },
   bold: { fontFamily: 'Poppins_600SemiBold' },
   settleButton: { backgroundColor: '#10B981', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
+  settleButtonDisabled: { opacity: 0.6 },
   settleButtonText: { color: '#FFFFFF', fontSize: 14, fontFamily: 'Poppins_500Medium' },
   emptyStateContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 100 },
   emptyStateText: { fontSize: 18, color: '#6B7280' },

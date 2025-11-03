@@ -14,10 +14,11 @@ const seedDatabase = async () => {
     console.log(`Seeding data for user: ${mainUser.name} (ID: ${mainUser.id})`);
 
     // 2. Create dummy users to act as friends and group members
+    // Using valid Solana public keys (base58 encoded, 32-44 characters)
     const dummyUsers = [
-      { id: generateId(), pubkey: 'A1ice111111111111111111111111111111111111', name: 'Alice', phone: '+11234567890' },
-      { id: generateId(), pubkey: 'B0b2222222222222222222222222222222222222', name: 'Bob', phone: '+10987654321' },
-      { id: generateId(), pubkey: 'Char1ie3333333333333333333333333333333333', name: 'Charlie', phone: '+15555555555' },
+      { id: generateId(), pubkey: '7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU', name: 'Alice', phone: '+11234567890' },
+      { id: generateId(), pubkey: '9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM', name: 'Bob', phone: '+10987654321' },
+      { id: generateId(), pubkey: 'FkWNnFZrJvYWEeXhAjQWeUMqCsXJmzw8KxBvGPfXwqKv', name: 'Charlie', phone: '+15555555555' },
     ];
 
     for (const user of dummyUsers) {
