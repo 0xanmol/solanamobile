@@ -5,3 +5,5 @@ TODO
 [] Refresh pages after post calls to showcase data
 [] Replace all api call mock data with actual calls in their functions
 [] safe area for bottom of the screen
+[] fix adding people to group
+[] editing Name of Groupo takes to create group page

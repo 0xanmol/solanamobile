@@ -155,7 +155,7 @@ export default function GroupDetailScreen() {
   return (
     <TabLayoutWrapper>
       <SafeAreaView style={styles.container} edges={['top']}>
-         <View style={styles.header}><TouchableOpacity style={styles.backButton} onPress={() => router.back()}><MaterialIcons name="arrow-back" size={24} color="#FFFFFF" /></TouchableOpacity><TouchableOpacity style={styles.settingsButton} onPress={() => router.push('/group-settings')}><MaterialIcons name="settings" size={24} color="#FFFFFF" /></TouchableOpacity></View>
+         <View style={styles.header}><TouchableOpacity style={styles.backButton} onPress={() => router.back()}><MaterialIcons name="arrow-back" size={24} color="#FFFFFF" /></TouchableOpacity><TouchableOpacity style={styles.settingsButton} onPress={() => router.push(`/group-settings?groupId=${id}`)}><MaterialIcons name="settings" size={24} color="#FFFFFF" /></TouchableOpacity></View>
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.groupInfo}>
             <View style={styles.iconContainer}><View style={[styles.iconBackground, { backgroundColor: group.color || '#781D27' }]}><MaterialIcons name={group.type === 'home' ? 'home' : group.type === 'trip' ? 'flight' : group.type === 'couple' ? 'favorite' : 'list'} size={40} color="#FFFFFF" /></View></View>

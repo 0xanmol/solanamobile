@@ -1,13 +1,167 @@
 import TabLayoutWrapper from '@/components/TabLayoutWrapper';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import { ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
+import React, { useState, useCallback } from 'react';
+import { ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { getGroup, deleteGroup, leaveGroup, updateGroupSettings } from '@/apis/groups';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+interface GroupMember {
+  id: string;
+  name: string;
+  pubkey: string;
+  avatar_uri?: string;
+}
+
+interface Group {
+  id: string;
+  name: string;
+  type: string;
+  simplify_debts?: number;
+  created_by: string;
+  members?: GroupMember[];
+}
 
 export default function GroupSettingsScreen() {
   const router = useRouter();
+  const { groupId } = useLocalSearchParams();
+  const [group, setGroup] = useState<Group | null>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [simplifyDebts, setSimplifyDebts] = useState(false);
+
+  const fetchData = useCallback(async () => {
+    if (!groupId) return;
+    setLoading(true);
+    try {
+      const userJson = await AsyncStorage.getItem('user_data');
+      if (userJson) {
+        const user = JSON.parse(userJson);
+        setCurrentUser(user);
+      }
+
+      const groupResponse = await getGroup(groupId as string);
+      if (groupResponse && groupResponse.success) {
+        setGroup(groupResponse.data);
+        setSimplifyDebts(!!groupResponse.data.simplify_debts);
+      } else {
+        console.error('Failed to fetch group:', groupResponse?.message);
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [groupId]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchData();
+    }, [fetchData])
+  );
+
+  const handleSimplifyDebtsToggle = async (value: boolean) => {
+    setSimplifyDebts(value);
+    if (groupId) {
+      const response = await updateGroupSettings(groupId as string, {
+        simplifyDebts: value,
+      });
+      if (!response.success) {
+        // Revert on failure
+        setSimplifyDebts(!value);
+        Alert.alert('Error', response.message || 'Failed to update settings');
+      }
+    }
+  };
+
+  const handleLeaveGroup = () => {
+    Alert.alert(
+      'Leave Group',
+      `Are you sure you want to leave "${group?.name}"?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Leave',
+          style: 'destructive',
+          onPress: async () => {
+            if (groupId) {
+              const response = await leaveGroup(groupId as string);
+              if (response.success) {
+                Alert.alert('Success', 'You have left the group');
+                router.replace('/(tabs)/groups');
+              } else {
+                Alert.alert('Error', response.message || 'Failed to leave group');
+              }
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDeleteGroup = () => {
+    Alert.alert(
+      'Delete Group',
+      `Are you sure you want to delete "${group?.name}"? This action cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            if (groupId) {
+              const response = await deleteGroup(groupId as string);
+              if (response.success) {
+                Alert.alert('Success', 'Group has been deleted');
+                router.replace('/(tabs)/groups');
+              } else {
+                Alert.alert('Error', response.message || 'Failed to delete group');
+              }
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const getGroupIcon = (type: string) => {
+    switch (type) {
+      case 'home':
+        return 'home';
+      case 'trip':
+        return 'flight';
+      case 'couple':
+        return 'favorite';
+      default:
+        return 'list';
+    }
+  };
+
+  const capitalizeFirst = (str: string) => {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  };
+
+  if (loading || !group) {
+    return (
+      <TabLayoutWrapper>
+        <SafeAreaView style={styles.container} edges={['top']}>
+          <View style={styles.header}>
+            <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+              <MaterialIcons name="arrow-back" size={24} color="#000000" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Group settings</Text>
+            <View style={styles.headerSpacer} />
+          </View>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#781D27" />
+          </View>
+        </SafeAreaView>
+      </TabLayoutWrapper>
+    );
+  }
+
+  const isCreator = currentUser && group.created_by === currentUser.id;
 
   return (
     <TabLayoutWrapper>
@@ -26,11 +180,11 @@ export default function GroupSettingsScreen() {
           <View style={styles.groupSection}>
             <View style={styles.groupInfo}>
               <View style={styles.groupIcon}>
-                <MaterialIcons name="home" size={32} color="#FFFFFF" />
+                <MaterialIcons name={getGroupIcon(group.type)} size={32} color="#FFFFFF" />
               </View>
               <View style={styles.groupDetails}>
-                <Text style={styles.groupName}>Jje</Text>
-                <Text style={styles.groupType}>Home</Text>
+                <Text style={styles.groupName}>{group.name}</Text>
+                <Text style={styles.groupType}>{capitalizeFirst(group.type)}</Text>
               </View>
               <TouchableOpacity style={styles.editButton} onPress={() => router.push('/create-group')}>
                 <MaterialIcons name="edit" size={20} color="#6B7280" />
@@ -41,38 +195,41 @@ export default function GroupSettingsScreen() {
           {/* Group Members Section */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Group members</Text>
-            
+
             <TouchableOpacity style={styles.optionRow} onPress={() => router.push('/add-friends')}>
               <MaterialIcons name="group-add" size={24} color="#6B7280" />
               <Text style={styles.optionText}>Add people to group</Text>
               <MaterialIcons name="chevron-right" size={24} color="#D1D5DB" />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.optionRow} onPress={() => router.push('/invite-link')}>
-              <MaterialIcons name="link" size={24} color="#6B7280" />
-              <Text style={styles.optionText}>Invite via link</Text>
-              <MaterialIcons name="chevron-right" size={24} color="#D1D5DB" />
-            </TouchableOpacity>
-
-            {/* Current User */}
-            <View style={styles.memberRow}>
-              <View style={styles.memberAvatar}>
-                <View style={styles.avatarPattern}>
-                  <View style={styles.pattern1} />
-                  <View style={styles.pattern2} />
+            {/* All Group Members */}
+            {group.members && group.members.map((member) => {
+              const isCurrentUser = currentUser && member.id === currentUser.id;
+              return (
+                <View key={member.id} style={styles.memberRow}>
+                  <View style={styles.memberAvatar}>
+                    <View style={styles.avatarPattern}>
+                      <View style={styles.pattern1} />
+                      <View style={styles.pattern2} />
+                    </View>
+                  </View>
+                  <View style={styles.memberInfo}>
+                    <Text style={styles.memberName}>
+                      {member.name}{isCurrentUser ? ' (you)' : ''}
+                    </Text>
+                    <Text style={styles.memberEmail}>
+                      {member.pubkey?.substring(0, 16)}...
+                    </Text>
+                  </View>
                 </View>
-              </View>
-              <View style={styles.memberInfo}>
-                <Text style={styles.memberName}>Saurav Verma (you)</Text>
-                <Text style={styles.memberEmail}>skbmasale941@gmail.com</Text>
-              </View>
-            </View>
+              );
+            })}
           </View>
 
           {/* Advanced Settings Section */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Advanced settings</Text>
-            
+
             {/* Simplify Group Debts */}
             <View style={styles.settingRow}>
               <View style={styles.settingLeft}>
@@ -82,51 +239,30 @@ export default function GroupSettingsScreen() {
                   <Text style={styles.settingDescription}>
                     Automatically combines debts to reduce the total number of repayments between group members.
                   </Text>
-                  <TouchableOpacity>
-                    <Text style={styles.learnMoreLink}>Learn more</Text>
-                  </TouchableOpacity>
                 </View>
               </View>
               <Switch
                 value={simplifyDebts}
-                onValueChange={setSimplifyDebts}
+                onValueChange={handleSimplifyDebtsToggle}
                 trackColor={{ false: '#E5E7EB', true: '#10B981' }}
                 thumbColor={simplifyDebts ? '#FFFFFF' : '#FFFFFF'}
               />
-            </View>
-
-            {/* Default Split */}
-            <View style={styles.settingRow}>
-              <View style={styles.settingLeft}>
-                <MaterialIcons name="equal" size={24} color="#6B7280" />
-                <View style={styles.settingContent}>
-                  <View style={styles.titleRow}>
-                    <Text style={styles.settingTitle}>Default split</Text>
-                    <View style={styles.proBadge}>
-                      <Text style={styles.proText}>PRO</Text>
-                    </View>
-                  </View>
-                  <Text style={styles.settingDescription}>Paid by you and split equally</Text>
-                  <Text style={styles.settingSubDescription}>
-                    New expenses you add to this group will default to this setting, which is personal, not group-wide.
-                  </Text>
-                </View>
-              </View>
-              <MaterialIcons name="chevron-right" size={24} color="#D1D5DB" />
             </View>
           </View>
 
           {/* Action Buttons */}
           <View style={styles.actionSection}>
-            <TouchableOpacity style={styles.actionRow}>
+            <TouchableOpacity style={styles.actionRow} onPress={handleLeaveGroup}>
               <MaterialIcons name="exit-to-app" size={24} color="#DC2626" />
               <Text style={styles.actionText}>Leave group</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.actionRow}>
-              <MaterialIcons name="delete" size={24} color="#DC2626" />
-              <Text style={styles.actionText}>Delete group</Text>
-            </TouchableOpacity>
+            {isCreator && (
+              <TouchableOpacity style={styles.actionRow} onPress={handleDeleteGroup}>
+                <MaterialIcons name="delete" size={24} color="#DC2626" />
+                <Text style={styles.actionText}>Delete group</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </ScrollView>
       </SafeAreaView>
@@ -138,6 +274,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   header: {
     flexDirection: 'row',
@@ -232,6 +373,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 10,
     paddingHorizontal: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F9FAFB',
   },
   memberAvatar: {
     width: 40,
@@ -296,45 +439,18 @@ const styles = StyleSheet.create({
     flex: 1,
     marginLeft: 16,
   },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
   settingTitle: {
     fontSize: 16,
     fontWeight: '500',
     color: '#1F2937',
     fontFamily: 'Poppins_500Medium',
-    marginRight: 8,
-  },
-  proBadge: {
-    backgroundColor: '#8B5CF6',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-  },
-  proText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    fontFamily: 'Poppins_600SemiBold',
+    marginBottom: 4,
   },
   settingDescription: {
     fontSize: 14,
     color: '#6B7280',
     fontFamily: 'Montserrat_400Regular',
     marginBottom: 4,
-  },
-  settingSubDescription: {
-    fontSize: 14,
-    color: '#6B7280',
-    fontFamily: 'Montserrat_400Regular',
-  },
-  learnMoreLink: {
-    fontSize: 14,
-    color: '#10B981',
-    fontFamily: 'Montserrat_500Medium',
   },
   actionSection: {
     paddingHorizontal: 20,

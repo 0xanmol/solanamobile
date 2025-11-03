@@ -4,9 +4,12 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useRouter } from 'expo-router';
-import React, { useState, useMemo } from 'react';
+import { useRouter, useFocusEffect } from 'expo-router';
+import React, { useState, useMemo, useCallback } from 'react';
+import { getActivity } from '@/apis/activity';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
+    ActivityIndicator,
     Image,
     Modal,
     ScrollView,
@@ -18,7 +21,20 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-interface ActivityItem {
+interface Activity {
+  id: string;
+  type: string;
+  description: string;
+  user_name: string;
+  group_name?: string;
+  expense_description?: string;
+  expense_amount?: number;
+  amount?: number;
+  created_at: string;
+  user_id: string;
+}
+
+interface FormattedActivity {
   id: string;
   icon: React.ReactNode;
   tileColor: string;
@@ -27,52 +43,136 @@ interface ActivityItem {
   meta: string;
 }
 
-const activities: ActivityItem[] = [
-    {
-      id: '1',
-      icon: <MaterialIcons name="list" size={24} color="#ffffff" />,
-      tileColor: '#781D27',
-      titleLine1: 'You created the group "Uu3uu".',
-      meta: 'Today, 2:54 am',
-    },
-    {
-      id: '2',
-      icon: <MaterialCommunityIcons name="silverware-variant" size={24} color="#ffffff" />,
-      tileColor: '#DDEEE4',
-      titleLine1: 'You added "Bought coffee" in "Jje".',
-      titleLine2: 'You do not owe anything',
-      meta: '6 days ago, 9:10 pm',
-    },
-    {
-      id: '3',
-      icon: <MaterialIcons name="description" size={24} color="#ffffff" />,
-      tileColor: '#E5E7EB',
-      titleLine1: 'You added "I3i3i" in "Jje".',
-      titleLine2: 'You do not owe anything',
-      meta: '6 days ago, 9:08 pm',
-    },
-    {
-      id: '4',
-      icon: <MaterialIcons name="home" size={24} color="#ffffff" />,
-      tileColor: '#781D27',
-      titleLine1: 'You created the group "Jje".',
-      meta: '6 days ago, 9:08 pm',
-    },
-];
-
 export default function ActivityScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  const renderActivityItem = (activity: ActivityItem) => (
+  const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
+  };
+
+  const getActivityIcon = (type: string) => {
+    switch (type) {
+      case 'group_created':
+        return <MaterialIcons name="group-add" size={24} color="#ffffff" />;
+      case 'expense_added':
+        return <MaterialIcons name="receipt" size={24} color="#ffffff" />;
+      case 'expense_edited':
+        return <MaterialIcons name="edit" size={24} color="#ffffff" />;
+      case 'payment_made':
+        return <MaterialIcons name="payment" size={24} color="#ffffff" />;
+      case 'member_added':
+        return <MaterialIcons name="person-add" size={24} color="#ffffff" />;
+      case 'member_left':
+        return <MaterialIcons name="person-remove" size={24} color="#ffffff" />;
+      default:
+        return <MaterialIcons name="info" size={24} color="#ffffff" />;
+    }
+  };
+
+  const getActivityColor = (type: string) => {
+    switch (type) {
+      case 'group_created':
+        return '#781D27';
+      case 'expense_added':
+        return '#10B981';
+      case 'expense_edited':
+        return '#F59E0B';
+      case 'payment_made':
+        return '#8B5CF6';
+      case 'member_added':
+        return '#3B82F6';
+      case 'member_left':
+        return '#EF4444';
+      default:
+        return '#6B7280';
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      const fetchActivities = async () => {
+        setLoading(true);
+        try {
+          const userJson = await AsyncStorage.getItem('user_data');
+          const user = userJson ? JSON.parse(userJson) : null;
+          setCurrentUser(user);
+
+          const response = await getActivity();
+          if (response && response.success && Array.isArray(response.data)) {
+            setActivities(response.data);
+          } else {
+            console.warn('Could not fetch activities');
+            setActivities([]);
+          }
+        } catch (error) {
+          console.error('Error fetching activities:', error);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchActivities();
+    }, [])
+  );
+
+  const formattedActivities = useMemo(() => {
+    return activities.map((activity): FormattedActivity => {
+      const isCurrentUser = activity.user_id === currentUser?.id;
+      const userName = isCurrentUser ? 'You' : activity.user_name;
+
+      let titleLine1 = activity.description;
+      let titleLine2: string | undefined;
+
+      // Format based on activity type
+      if (activity.type === 'expense_added' && activity.expense_description) {
+        titleLine1 = `${userName} added "${activity.expense_description}"${activity.group_name ? ` in "${activity.group_name}"` : ''}`;
+        if (activity.expense_amount) {
+          titleLine2 = `Amount: $${activity.expense_amount.toFixed(2)}`;
+        }
+      } else if (activity.type === 'group_created' && activity.group_name) {
+        titleLine1 = `${userName} created the group "${activity.group_name}"`;
+      } else if (activity.type === 'payment_made' && activity.amount) {
+        titleLine2 = `Amount: $${activity.amount.toFixed(2)}`;
+      }
+
+      return {
+        id: activity.id,
+        icon: getActivityIcon(activity.type),
+        tileColor: getActivityColor(activity.type),
+        titleLine1,
+        titleLine2,
+        meta: formatTimeAgo(activity.created_at),
+      };
+    });
+  }, [activities, currentUser]);
+
+  const renderActivityItem = (activity: FormattedActivity) => (
     <View
       key={activity.id}
       style={styles.row}
     >
-      <View style={[styles.tile, { backgroundColor: activity.tileColor }]}> 
+      <View style={[styles.tile, { backgroundColor: activity.tileColor }]}>
         {activity.icon}
         <View style={styles.quarterCircle}>
           <Image
@@ -93,22 +193,37 @@ export default function ActivityScreen() {
 
   const filteredActivities = useMemo(() => {
     if (!searchQuery.trim()) {
-      return activities;
+      return formattedActivities;
     }
     const query = searchQuery.toLowerCase();
-    return activities.filter(activity => 
+    return formattedActivities.filter(activity =>
       activity.titleLine1.toLowerCase().includes(query) ||
       activity.titleLine2?.toLowerCase().includes(query) ||
       activity.meta.toLowerCase().includes(query)
     );
-  }, [searchQuery]);
+  }, [searchQuery, formattedActivities]);
+
+  if (loading) {
+    return (
+      <TabLayoutWrapper>
+        <SafeAreaView style={[styles.container, { backgroundColor: '#FFFFFF' }]} edges={['top']}>
+          <View style={styles.header}>
+            <Text style={styles.title}>Activity</Text>
+          </View>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#781D27" />
+          </View>
+        </SafeAreaView>
+      </TabLayoutWrapper>
+    );
+  }
 
   return (
     <TabLayoutWrapper>
       <SafeAreaView style={[styles.container, { backgroundColor: '#FFFFFF' }]} edges={['top']}>
         <View style={styles.header}>
           <Text style={styles.title}>Activity</Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.searchBtn}
             onPress={() => setShowSearchModal(true)}
           >
@@ -116,11 +231,21 @@ export default function ActivityScreen() {
           </TouchableOpacity>
         </View>
 
-        <ScrollView 
-          style={styles.content} 
+        <ScrollView
+          style={styles.content}
           showsVerticalScrollIndicator={false}
         >
-          {filteredActivities.map(renderActivityItem)}
+          {filteredActivities.length > 0 ? (
+            filteredActivities.map(renderActivityItem)
+          ) : (
+            <View style={styles.emptyContainer}>
+              <MaterialIcons name="history" size={64} color="#D1D5DB" />
+              <Text style={styles.emptyText}>No activity yet</Text>
+              <Text style={styles.emptySubtext}>
+                Your group and expense activity will appear here
+              </Text>
+            </View>
+          )}
         </ScrollView>
 
         <FabButtons
@@ -197,6 +322,32 @@ export default function ActivityScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 80,
+    paddingHorizontal: 40,
+  },
+  emptyText: {
+    fontSize: 20,
+    fontFamily: 'Poppins_600SemiBold',
+    color: '#1F2937',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    fontFamily: 'Montserrat_400Regular',
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 20,
   },
   header: {
     flexDirection: 'row',

@@ -34,6 +34,7 @@ export default function AddExpenseScreen() {
   // State for group-context expense
   const [group, setGroup] = useState<Group | null>(null);
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
+  const [paidBy, setPaidBy] = useState<string>('');
 
   // Common state
   const [allGroups, setAllGroups] = useState<Group[]>([]);
@@ -47,6 +48,11 @@ export default function AddExpenseScreen() {
       const userJson = await AsyncStorage.getItem('user_data');
       const user = userJson ? JSON.parse(userJson) : null;
       setCurrentUser(user);
+
+      // Set current user as default payer
+      if (user) {
+        setPaidBy(user.id);
+      }
 
       if (groupId) {
         const groupResponse = await getGroup(groupId as string);
@@ -90,7 +96,7 @@ export default function AddExpenseScreen() {
       expenseData = {
         description,
         amount: parseFloat(amount),
-        paidBy: currentUser.id,
+        paidBy: paidBy,
         groupId: groupId as string,
         participants: selectedMembers.map(userId => ({ userId, share })),
         splitMethod: 'equally',
@@ -98,7 +104,7 @@ export default function AddExpenseScreen() {
       };
     } else {
       if (selectedItems.length === 0) { alert('Please select a group or at least one friend.'); return; }
-      
+
       if (selectedType === 'group') {
         const selectedGroupId = selectedItems[0].id;
         const groupResponse = await getGroup(selectedGroupId);
@@ -115,7 +121,7 @@ export default function AddExpenseScreen() {
         expenseData = {
           description,
           amount: parseFloat(amount),
-          paidBy: currentUser.id,
+          paidBy: currentUser.id, // Always "you paid" in non-group context
           groupId: selectedGroupId,
           participants: members.map(member => ({ userId: member.id, share })),
           splitMethod: 'equally',
@@ -127,7 +133,7 @@ export default function AddExpenseScreen() {
         expenseData = {
           description,
           amount: parseFloat(amount),
-          paidBy: currentUser.id,
+          paidBy: currentUser.id, // Always "you paid" in non-group context
           participants: participantIds.map(userId => ({ userId, share })),
           splitMethod: 'equally',
           notes: note,
@@ -230,13 +236,41 @@ export default function AddExpenseScreen() {
                 <Text style={styles.withLabel}>Expense in <Text style={styles.withBold}>{group.name}</Text></Text>
               </View>
               {renderCommonFields()}
+
+              {/* Who Paid Selector */}
+              <View style={styles.paidByContainer}>
+                <Text style={styles.paidByHeader}>Paid by</Text>
+                {group.members?.map(member => (
+                  <TouchableOpacity
+                    key={member.id}
+                    style={styles.paidByItem}
+                    onPress={() => setPaidBy(member.id)}
+                  >
+                    <View style={[styles.radioButton, paidBy === member.id && styles.radioButtonSelected]}>
+                      {paidBy === member.id && <View style={styles.radioButtonInner} />}
+                    </View>
+                    <Text style={styles.paidByName}>
+                      {member.id === currentUser?.id ? 'You' : member.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
               <View style={styles.participantsContainer}>
                 <Text style={styles.participantsHeader}>Split between</Text>
                 {group.members?.map(member => (
-                  <TouchableOpacity key={member.id} style={styles.participantItem} onPress={() => handleToggleMember(member.id)}>
-                    <Checkbox checked={selectedMembers.includes(member.id)} />
-                    <Text style={styles.participantName}>{member.name}</Text>
-                  </TouchableOpacity>
+                  <View key={member.id} style={styles.participantItem}>
+                    <Checkbox
+                      checked={selectedMembers.includes(member.id)}
+                      onPress={() => handleToggleMember(member.id)}
+                    />
+                    <TouchableOpacity
+                      style={styles.participantNameContainer}
+                      onPress={() => handleToggleMember(member.id)}
+                    >
+                      <Text style={styles.participantName}>{member.name}</Text>
+                    </TouchableOpacity>
+                  </View>
                 ))}
               </View>
             </>
@@ -265,6 +299,17 @@ export default function AddExpenseScreen() {
                 </View>
               )}
               {renderCommonFields()}
+
+              {/* Paid by You - Non-group context */}
+              <View style={styles.paidByContainer}>
+                <Text style={styles.paidByHeader}>Paid by</Text>
+                <View style={styles.paidByItem}>
+                  <View style={[styles.radioButton, styles.radioButtonSelected]}>
+                    <View style={styles.radioButtonInner} />
+                  </View>
+                  <Text style={styles.paidByName}>You</Text>
+                </View>
+              </View>
             </>
           )}
         </ScrollView>
@@ -305,8 +350,16 @@ const styles = StyleSheet.create({
   amountInput: { fontSize: 40, fontFamily: 'Poppins_600SemiBold' },
   currency: { fontSize: 24, color: '#1F2937', fontFamily: 'Poppins_600SemiBold' },
   groupContextHeader: { marginBottom: 20 },
+  paidByContainer: { marginTop: 20, marginBottom: 20 },
+  paidByHeader: { fontSize: 16, fontFamily: 'Poppins_600SemiBold', color: '#1F2937', marginBottom: 12 },
+  paidByItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, gap: 12 },
+  paidByName: { fontSize: 16, color: '#1F2937', fontFamily: 'Poppins_500Medium' },
+  radioButton: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: '#D1D5DB', alignItems: 'center', justifyContent: 'center' },
+  radioButtonSelected: { borderColor: '#7C3AED' },
+  radioButtonInner: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#7C3AED' },
   participantsContainer: { marginTop: 20 },
   participantsHeader: { fontSize: 16, fontFamily: 'Poppins_600SemiBold', color: '#1F2937', marginBottom: 8 },
   participantItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, gap: 12 },
+  participantNameContainer: { flex: 1 },
   participantName: { fontSize: 16, color: '#1F2937' },
 });
