@@ -1,0 +1,7 @@
+DONE
+
+
+TODO
+[] Refresh pages after post calls to showcase data
+[] Replace all api call mock data with actual calls in their functions
+[] safe area for bottom of the screen

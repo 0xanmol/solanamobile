@@ -113,8 +113,7 @@ export default function FriendsScreen() {
           </TouchableOpacity>
         </ScrollView>
 
-        <FabButtons 
-          onScanPress={() => console.log('Scan pressed')}
+        <FabButtons
           onAddExpensePress={() => console.log('Add expense pressed')}
         />
 

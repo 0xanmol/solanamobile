@@ -1,145 +1,112 @@
 /**
  * Authentication API
- * Mock implementations that log request/response data
+ * Wallet-based authentication with Solana public keys
  */
 
-export interface SignupData {
-  fullName: string;
-  email: string;
-  password: string;
-  phoneNumber?: string;
-  profileImage?: string;
-  currency?: string;
+import apiClient, { saveAuthToken, clearAuthData } from '../utils/api-client';
+
+export interface ConnectWalletData {
+  pubkey: string;
 }
 
-export interface LoginData {
-  email: string;
-  password: string;
+export interface CompleteProfileData {
+  name: string;
+  phone?: string;
 }
 
 export interface AuthResponse {
   success: boolean;
-  user?: {
-    id: string;
-    name: string;
-    email: string;
-    profileImage?: string;
+  data?: {
+    token: string;
+    user: {
+      id: string;
+      pubkey: string;
+      name: string | null;
+      phone?: string | null;
+      avatar_uri?: string | null;
+      is_profile_complete: number;
+    };
+    isNewUser: boolean;
+    requiresProfileCompletion?: boolean;
   };
-  token?: string;
   message?: string;
 }
 
 /**
- * User signup/registration
+ * Connect wallet - Check if user exists or create new account
  */
-export const signup = async (data: SignupData): Promise<AuthResponse> => {
-  const request = {
-    endpoint: 'POST /api/auth/signup',
-    body: data,
-  };
-  console.log('[API] Request:', request);
+export const connectWallet = async (pubkey: string): Promise<AuthResponse> => {
+  try {
+    const response = await apiClient.post('/auth/connect', { pubkey });
 
-  const response: AuthResponse = {
-    success: true,
-    user: {
-      id: 'user_' + Date.now(),
-      name: data.fullName,
-      email: data.email,
-      profileImage: data.profileImage,
-    },
-    token: 'mock_jwt_token_' + Date.now(),
-    message: 'Account created successfully',
-  };
-  console.log('[API] Response:', response);
+    // Save token if provided
+    if (response.data.success && response.data.data?.token) {
+      await saveAuthToken(response.data.data.token);
+    }
 
-  return Promise.resolve(response);
+    return response.data;
+  } catch (error: any) {
+    console.error('[API] Connect wallet error:', error.response?.data || error.message);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to connect wallet',
+    };
+  }
 };
 
 /**
- * Email/password login
+ * Complete profile for new users
  */
-export const login = async (data: LoginData): Promise<AuthResponse> => {
-  const request = {
-    endpoint: 'POST /api/auth/login',
-    body: data,
-  };
-  console.log('[API] Request:', request);
-
-  const response: AuthResponse = {
-    success: true,
-    user: {
-      id: 'user_123',
-      name: 'Sai Kumar',
-      email: data.email,
-    },
-    token: 'mock_jwt_token_' + Date.now(),
-    message: 'Login successful',
-  };
-  console.log('[API] Response:', response);
-
-  return Promise.resolve(response);
-};
-
-/**
- * Google OAuth sign-in
- */
-export const googleSignIn = async (): Promise<AuthResponse> => {
-  const request = {
-    endpoint: 'POST /api/auth/google',
-    body: {},
-  };
-  console.log('[API] Request:', request);
-
-  const response: AuthResponse = {
-    success: true,
-    user: {
-      id: 'user_google_123',
-      name: 'Google User',
-      email: 'user@gmail.com',
-    },
-    token: 'mock_google_jwt_token_' + Date.now(),
-    message: 'Google sign-in successful',
-  };
-  console.log('[API] Response:', response);
-
-  return Promise.resolve(response);
+export const completeProfile = async (data: CompleteProfileData): Promise<AuthResponse> => {
+  try {
+    const response = await apiClient.post('/auth/complete-profile', data);
+    return response.data;
+  } catch (error: any) {
+    console.error('[API] Complete profile error:', error.response?.data || error.message);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to complete profile',
+    };
+  }
 };
 
 /**
  * User logout
  */
 export const logout = async (): Promise<{ success: boolean; message: string }> => {
-  const request = {
-    endpoint: 'POST /api/auth/logout',
-    body: {},
-  };
-  console.log('[API] Request:', request);
+  try {
+    const response = await apiClient.post('/auth/logout');
 
-  const response = {
-    success: true,
-    message: 'Logged out successfully',
-  };
-  console.log('[API] Response:', response);
+    // Clear local auth data
+    await clearAuthData();
 
-  return Promise.resolve(response);
+    return response.data;
+  } catch (error: any) {
+    console.error('[API] Logout error:', error.response?.data || error.message);
+
+    // Clear local data anyway
+    await clearAuthData();
+
+    return {
+      success: true,
+      message: 'Logged out successfully',
+    };
+  }
 };
 
-/**
- * Forgot password
- */
-export const forgotPassword = async (email: string): Promise<{ success: boolean; message: string }> => {
-  const request = {
-    endpoint: 'POST /api/auth/forgot-password',
-    body: { email },
-  };
-  console.log('[API] Request:', request);
-
-  const response = {
-    success: true,
-    message: 'Password reset link sent to email',
-  };
-  console.log('[API] Response:', response);
-
-  return Promise.resolve(response);
+// Legacy functions kept for backward compatibility (not used with wallet auth)
+export const signup = async () => {
+  throw new Error('Email/password signup not supported. Use connectWallet instead.');
 };
 
+export const login = async () => {
+  throw new Error('Email/password login not supported. Use connectWallet instead.');
+};
+
+export const googleSignIn = async () => {
+  throw new Error('Google sign-in not implemented. Use connectWallet instead.');
+};
+
+export const forgotPassword = async () => {
+  throw new Error('Password reset not supported with wallet authentication.');
+};

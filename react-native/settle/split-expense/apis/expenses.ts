@@ -1,7 +1,9 @@
 /**
  * Expenses API
- * Mock implementations that log request/response data
+ * Real backend implementations
  */
+
+import apiClient from '../utils/api-client';
 
 export interface Expense {
   id: string;
@@ -41,80 +43,49 @@ export interface SplitAdjustment {
  * Create expense
  */
 export const createExpense = async (data: CreateExpenseData): Promise<{ success: boolean; expense: Expense }> => {
-  const request = {
-    endpoint: 'POST /api/expenses',
-    body: data,
-  };
-  console.log('[API] Request:', request);
-
-  const response = {
-    success: true,
-    expense: {
-      id: 'expense_' + Date.now(),
-      description: data.description,
-      amount: data.amount,
-      currency: data.currency || 'USD',
-      date: data.date || new Date().toISOString(),
-      paidBy: data.paidBy,
-      groupId: data.groupId,
-      participants: data.friendIds || [],
-      splitMethod: data.splitMethod || 'equally',
-      notes: data.notes,
-    },
-  };
-  console.log('[API] Response:', response);
-
-  return Promise.resolve(response);
+  try {
+    const response = await apiClient.post('/expenses', data);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error creating expense:', error);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to create expense'
+    };
+  }
 };
 
 /**
  * Get expenses
  */
 export const getExpenses = async (groupId?: string): Promise<Expense[]> => {
-  const request = {
-    endpoint: groupId ? `GET /api/expenses?groupId=${groupId}` : 'GET /api/expenses',
-  };
-  console.log('[API] Request:', request);
-
-  const response: Expense[] = [
-    {
-      id: 'exp_1',
-      description: 'Cock sugar',
-      amount: 1965199.0,
-      currency: 'USD',
-      date: 'Oct. 23',
-      paidBy: 'You',
-      participants: ['user_1', 'user_2'],
-      splitMethod: 'equally',
-    },
-  ];
-  console.log('[API] Response:', response);
-
-  return Promise.resolve(response);
+  try {
+    const endpoint = groupId ? `/expenses?groupId=${groupId}` : '/expenses';
+    const response = await apiClient.get(endpoint);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error fetching expenses:', error);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to fetch expenses'
+    } as any;
+  }
 };
 
 /**
  * Get single expense
  */
 export const getExpense = async (id: string): Promise<Expense> => {
-  const request = {
-    endpoint: `GET /api/expenses/${id}`,
-  };
-  console.log('[API] Request:', request);
-
-  const response: Expense = {
-    id,
-    description: 'Cock sugar',
-    amount: 1965199.0,
-    currency: 'USD',
-    date: 'Oct. 23',
-    paidBy: 'You',
-    participants: ['user_1', 'user_2'],
-    splitMethod: 'equally',
-  };
-  console.log('[API] Response:', response);
-
-  return Promise.resolve(response);
+  try {
+    const response = await apiClient.get(`/expenses/${id}`);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error fetching expense:', error);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to fetch expense'
+    } as any;
+  }
 };
 
 /**
@@ -124,46 +95,32 @@ export const updateExpense = async (
   id: string,
   data: Partial<CreateExpenseData>
 ): Promise<{ success: boolean; expense: Expense }> => {
-  const request = {
-    endpoint: `PUT /api/expenses/${id}`,
-    body: data,
-  };
-  console.log('[API] Request:', request);
-
-  const response = {
-    success: true,
-    expense: {
-      id,
-      description: data.description || 'Cock sugar',
-      amount: data.amount || 1965199.0,
-      currency: data.currency || 'USD',
-      date: data.date || 'Oct. 23',
-      paidBy: data.paidBy || 'You',
-      participants: data.friendIds || ['user_1', 'user_2'],
-      splitMethod: data.splitMethod || 'equally',
-    },
-  };
-  console.log('[API] Response:', response);
-
-  return Promise.resolve(response);
+  try {
+    const response = await apiClient.put(`/expenses/${id}`, data);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error updating expense:', error);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to update expense'
+    };
+  }
 };
 
 /**
  * Delete expense
  */
 export const deleteExpense = async (id: string): Promise<{ success: boolean; message: string }> => {
-  const request = {
-    endpoint: `DELETE /api/expenses/${id}`,
-  };
-  console.log('[API] Request:', request);
-
-  const response = {
-    success: true,
-    message: 'Expense deleted successfully',
-  };
-  console.log('[API] Response:', response);
-
-  return Promise.resolve(response);
+  try {
+    const response = await apiClient.delete(`/expenses/${id}`);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error deleting expense:', error);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to delete expense'
+    };
+  }
 };
 
 /**
@@ -176,18 +133,15 @@ export const adjustSplit = async (
     adjustments: SplitAdjustment[];
   }
 ): Promise<{ success: boolean; message: string }> => {
-  const request = {
-    endpoint: `PUT /api/expenses/${expenseId}/split`,
-    body: data,
-  };
-  console.log('[API] Request:', request);
-
-  const response = {
-    success: true,
-    message: 'Split adjusted successfully',
-  };
-  console.log('[API] Response:', response);
-
-  return Promise.resolve(response);
+  try {
+    const response = await apiClient.put(`/expenses/${expenseId}/split`, data);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error adjusting split:', error);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to adjust split'
+    };
+  }
 };
 

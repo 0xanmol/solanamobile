@@ -35,6 +35,21 @@ export const styles = StyleSheet.create({
   formSection: {
     marginBottom: Spacing['2xl'],
   },
+  titleSection: {
+    marginBottom: Spacing['3xl'],
+  },
+  title: {
+    fontSize: FontSize['3xl'],
+    fontWeight: '600',
+    color: Colors.textPrimary,
+    fontFamily: FontFamily.poppinsSemiBold,
+    marginBottom: Spacing.sm,
+  },
+  subtitle: {
+    fontSize: FontSize.md,
+    color: Colors.textSecondary,
+    fontFamily: FontFamily.montserratRegular,
+  },
   inputContainer: {
     marginBottom: Spacing.lg,
   },
@@ -322,10 +337,27 @@ export const styles = StyleSheet.create({
     marginTop: Spacing.xl,
     ...Shadow.base,
   },
+  doneButtonDisabled: {
+    opacity: 0.6,
+  },
   doneButtonText: {
     fontSize: FontSize.lg,
     fontWeight: '600',
     color: Colors.white,
     fontFamily: FontFamily.poppinsSemiBold,
+  },
+  infoContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Spacing.sm,
+    marginTop: Spacing.md,
+    paddingHorizontal: Spacing.sm,
+  },
+  infoText: {
+    flex: 1,
+    fontSize: FontSize.sm,
+    color: Colors.textTertiary,
+    fontFamily: FontFamily.montserratRegular,
+    lineHeight: 18,
   },
 });

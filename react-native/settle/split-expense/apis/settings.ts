@@ -1,7 +1,9 @@
 /**
  * Settings API
- * Mock implementations that log request/response data
+ * Real backend implementations
  */
+
+import apiClient from '../utils/api-client';
 
 export interface AccountSettings {
   name?: string;
@@ -31,24 +33,19 @@ export interface SecuritySettings {
 }
 
 /**
- * Update account settings
+ * Get email settings
  */
-export const updateAccountSettings = async (
-  settings: AccountSettings
-): Promise<{ success: boolean; message: string }> => {
-  const request = {
-    endpoint: 'PUT /api/settings/account',
-    body: settings,
-  };
-  console.log('[API] Request:', request);
-
-  const response = {
-    success: true,
-    message: 'Account settings updated successfully',
-  };
-  console.log('[API] Response:', response);
-
-  return Promise.resolve(response);
+export const getEmailSettings = async (): Promise<EmailSettings> => {
+  try {
+    const response = await apiClient.get('/settings/email');
+    return response.data;
+  } catch (error: any) {
+    console.error('Error fetching email settings:', error);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to fetch email settings'
+    } as any;
+  }
 };
 
 /**
@@ -57,19 +54,30 @@ export const updateAccountSettings = async (
 export const updateEmailSettings = async (
   settings: EmailSettings
 ): Promise<{ success: boolean; message: string }> => {
-  const request = {
-    endpoint: 'PUT /api/settings/email',
-    body: settings,
-  };
-  console.log('[API] Request:', request);
+  try {
+    const response = await apiClient.put('/settings/email', settings);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error updating email settings:', error);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to update email settings'
+    };
+  }
+};
 
-  const response = {
+/**
+ * Update account settings
+ */
+export const updateAccountSettings = async (
+  settings: AccountSettings
+): Promise<{ success: boolean; message: string }> => {
+  const mockResponse = {
     success: true,
-    message: 'Email settings updated successfully',
+    message: 'Account settings updated successfully',
   };
-  console.log('[API] Response:', response);
 
-  return Promise.resolve(response);
+  return Promise.resolve(mockResponse);
 };
 
 /**
@@ -78,52 +86,32 @@ export const updateEmailSettings = async (
 export const updateSecuritySettings = async (
   settings: SecuritySettings
 ): Promise<{ success: boolean; message: string }> => {
-  const request = {
-    endpoint: 'PUT /api/settings/security',
-    body: settings,
-  };
-  console.log('[API] Request:', request);
-
-  const response = {
+  const mockResponse = {
     success: true,
     message: 'Security settings updated successfully',
   };
-  console.log('[API] Response:', response);
 
-  return Promise.resolve(response);
+  return Promise.resolve(mockResponse);
 };
 
 /**
  * Manage blocklist
  */
 export const manageBlocklist = async (action: 'add' | 'remove', userId: string): Promise<{ success: boolean; message: string }> => {
-  const request = {
-    endpoint: 'POST /api/settings/blocklist',
-    body: { action, userId },
-  };
-  console.log('[API] Request:', request);
-
-  const response = {
+  const mockResponse = {
     success: true,
     message: action === 'add' ? 'User blocked successfully' : 'User unblocked successfully',
   };
-  console.log('[API] Response:', response);
 
-  return Promise.resolve(response);
+  return Promise.resolve(mockResponse);
 };
 
 /**
  * Get blocklist
  */
 export const getBlocklist = async (): Promise<{ userId: string; name: string }[]> => {
-  const request = {
-    endpoint: 'GET /api/settings/blocklist',
-  };
-  console.log('[API] Request:', request);
+  const mockResponse: { userId: string; name: string }[] = [];
 
-  const response: { userId: string; name: string }[] = [];
-  console.log('[API] Response:', response);
-
-  return Promise.resolve(response);
+  return Promise.resolve(mockResponse);
 };
 

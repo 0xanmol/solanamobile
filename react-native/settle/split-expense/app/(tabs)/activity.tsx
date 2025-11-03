@@ -123,8 +123,7 @@ export default function ActivityScreen() {
           {filteredActivities.map(renderActivityItem)}
         </ScrollView>
 
-        <FabButtons 
-          onScanPress={() => console.log('Scan pressed')}
+        <FabButtons
           onAddExpensePress={() => router.push('/add-expense')}
         />
       </SafeAreaView>

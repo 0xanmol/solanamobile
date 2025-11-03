@@ -4,8 +4,9 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import React, { useCallback, useState } from 'react';
+import { getGroups, Group as APIGroup } from '@/apis/groups';
 import {
   Modal,
   ScrollView,
@@ -25,6 +26,19 @@ interface Group {
   icon: React.ReactNode;
 }
 
+const getGroupIcon = (type: string) => {
+  switch (type) {
+    case 'home':
+      return <MaterialIcons name="home" size={28} color="#ffffff" />;
+    case 'trip':
+      return <MaterialIcons name="flight" size={28} color="#ffffff" />;
+    case 'couple':
+      return <MaterialIcons name="favorite" size={28} color="#ffffff" />;
+    default:
+      return <MaterialIcons name="list" size={28} color="#ffffff" />;
+  }
+};
+
 export default function GroupsScreen() {
   const router = useRouter();
   const [showCreateGroup, setShowCreateGroup] = useState(false);
@@ -40,55 +54,46 @@ export default function GroupsScreen() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
 
-  const [groups] = useState<Group[]>([
-    {
-      id: '1',
-      name: 'Jje',
-      status: 'settled up',
-      tileColor: '#781D27',
-      icon: <MaterialIcons name="home" size={28} color="#ffffff" />,
-    },
-    {
-      id: '2',
-      name: 'Uu3uu',
-      status: 'no expenses',
-      tileColor: '#781D27',
-      icon: <MaterialIcons name="list" size={28} color="#ffffff" />,
-    },
-    {
-      id: '3',
-      name: 'Non-group expenses',
-      status: 'no expenses',
-      tileColor: '#E5E7EB',
-      icon: (
-        <View style={styles.multiColorTile}>
-          <View style={[styles.colorBlock, { backgroundColor: '#1CC29F' }]} />
-          <View style={[styles.colorBlock, { backgroundColor: '#F59E0B' }]} />
-          <View style={[styles.colorBlock, { backgroundColor: '#8B5CF6' }]} />
-        </View>
-      ),
-    },
-  ]);
+  const [groups, setGroups] = useState<Group[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [allGroups, setAllGroups] = useState<any[]>([]);
+  const [allUsers] = useState<any[]>([]);
 
-  const allGroups = [
-    { id: '1', name: 'Weekend Trip to Paris', type: 'trip' },
-    { id: '2', name: 'Apartment Expenses', type: 'home' },
-    { id: '3', name: 'Date Night Fund', type: 'couple' },
-    { id: '4', name: 'Office Lunch', type: 'other' },
-    { id: '5', name: 'Vacation 2024', type: 'trip' },
-    { id: '6', name: 'House Bills', type: 'home' },
-    { id: '7', name: 'Wedding Planning', type: 'couple' },
-    { id: '8', name: 'Study Group', type: 'other' },
-  ];
+  useFocusEffect(
+    useCallback(() => {
+      const fetchGroups = async () => {
+        setIsLoading(true);
+        try {
+                const response = await getGroups();
+                if (response && response.success && Array.isArray(response.data)) {
+                  const mappedGroups = response.data.map((group: APIGroup) => ({
+                    id: group.id,
+                    name: group.name,
+                    status: 'settled up',
+                    tileColor: group.color || '#781D27',
+                    icon: getGroupIcon(group.type),
+                  }));
+                  setGroups(mappedGroups);
+                  setAllGroups(response.data.map((group: APIGroup) => ({
+                    id: group.id,
+                    name: group.name,
+                    type: group.type,
+                  })));
+                } else {
+                  // This can happen if the API returns an error.
+                  console.warn('Could not fetch groups or no groups found.');
+                  setGroups([]);
+                  setAllGroups([]);
+                }        } catch (error) {
+          console.error('Error fetching groups:', error);
+        } finally {
+          setIsLoading(false);
+        }
+      };
 
-  const allUsers = [
-    { id: '1', name: 'John Doe', email: 'john@example.com' },
-    { id: '2', name: 'Sarah Wilson', email: 'sarah@example.com' },
-    { id: '3', name: 'Mike Johnson', email: 'mike@example.com' },
-    { id: '4', name: 'Emma Brown', email: 'emma@example.com' },
-    { id: '5', name: 'David Lee', email: 'david@example.com' },
-    { id: '6', name: 'Lisa Chen', email: 'lisa@example.com' },
-  ];
+      fetchGroups();
+    }, [])
+  );
 
   // Filter search results
   const filteredGroups = allGroups.filter(group =>

@@ -1,7 +1,9 @@
 /**
  * Search API
- * Mock implementations that log request/response data
+ * Real backend implementations
  */
+
+import apiClient from '../utils/api-client';
 
 export interface UserSearchResult {
   id: string;
@@ -26,56 +28,31 @@ export interface SearchResults {
  * Search users
  */
 export const searchUsers = async (query: string): Promise<UserSearchResult[]> => {
-  const request = {
-    endpoint: `GET /api/search/users?q=${query}`,
-  };
-  console.log('[API] Request:', request);
-
-  const response: UserSearchResult[] = [
-    {
-      id: 'user_1',
-      name: 'John Doe',
-      email: 'john@example.com',
-    },
-    {
-      id: 'user_2',
-      name: 'Sarah Wilson',
-      email: 'sarah@example.com',
-    },
-  ];
-  console.log('[API] Response:', response);
-
-  return Promise.resolve(response);
+  try {
+    const response = await apiClient.get(`/search/users?q=${query}`);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error searching users:', error);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to search users'
+    } as any;
+  }
 };
 
 /**
  * Unified search (groups and users)
  */
 export const searchAll = async (query: string): Promise<SearchResults> => {
-  const request = {
-    endpoint: `GET /api/search?q=${query}`,
-  };
-  console.log('[API] Request:', request);
-
-  const response: SearchResults = {
-    users: [
-      {
-        id: 'user_1',
-        name: 'John Doe',
-        email: 'john@example.com',
-      },
-    ],
-    groups: [
-      {
-        id: 'group_1',
-        name: 'Weekend Trip to Paris',
-        type: 'trip',
-        memberCount: 5,
-      },
-    ],
-  };
-  console.log('[API] Response:', response);
-
-  return Promise.resolve(response);
+  try {
+    const response = await apiClient.get(`/search?q=${query}`);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error performing search:', error);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to perform search'
+    } as any;
+  }
 };
 

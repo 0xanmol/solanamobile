@@ -15,6 +15,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { createGroup, CreateGroupData } from '../apis/groups';
+
 type GroupType = 'trip' | 'home' | 'couple' | 'other';
 
 export default function CreateGroupScreen() {
@@ -29,15 +31,36 @@ export default function CreateGroupScreen() {
   const [startDateValue, setStartDateValue] = useState(new Date());
   const [endDateValue, setEndDateValue] = useState(new Date());
 
-  const handleDone = () => {
-    console.log('Creating group:', {
+  const handleDone = async () => {
+    if (!groupName.trim()) {
+      alert('Please enter a group name.');
+      return;
+    }
+
+    const groupData: CreateGroupData = {
       name: groupName,
       type: selectedType,
-      addTripDates,
-      startDate,
-      endDate,
-    });
-    router.back();
+    };
+
+    if (selectedType === 'trip' && addTripDates) {
+      groupData.startDate = startDateValue.toISOString();
+      if (endDate) {
+        groupData.endDate = endDateValue.toISOString();
+      }
+    }
+
+    try {
+      const result = await createGroup(groupData);
+      if (result.success) {
+        router.back();
+      } else {
+        console.error('Failed to create group:', result.message);
+        alert(`Error: ${result.message || 'An unknown error occurred.'}`);
+      }
+    } catch (error) {
+      console.error('An error occurred during group creation:', error);
+      alert('An unexpected error occurred. Please try again.');
+    }
   };
 
   const handleBack = () => {

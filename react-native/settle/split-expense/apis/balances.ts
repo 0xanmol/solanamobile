@@ -1,7 +1,9 @@
 /**
  * Balances/Settlement API
- * Mock implementations that log request/response data
+ * Real backend implementations
  */
+
+import apiClient from '../utils/api-client';
 
 export interface Balance {
   id: string;
@@ -25,31 +27,17 @@ export interface Settlement {
  * Get balances
  */
 export const getBalances = async (groupId?: string): Promise<Balance[]> => {
-  const request = {
-    endpoint: groupId ? `GET /api/balances?groupId=${groupId}` : 'GET /api/balances',
-  };
-  console.log('[API] Request:', request);
-
-  const response: Balance[] = [
-    {
-      id: 'balance_1',
-      type: 'gets_back',
-      person: 'Saurav Verma',
-      amount: '$3,231.00',
-      color: '#10B981',
-    },
-    {
-      id: 'balance_2',
-      type: 'owes',
-      person: 'Saurav Meghwal',
-      amount: '$3,231.00',
-      creditor: 'Saurav Verma',
-      color: '#F59E0B',
-    },
-  ];
-  console.log('[API] Response:', response);
-
-  return Promise.resolve(response);
+  try {
+    const endpoint = groupId ? `/balances?groupId=${groupId}` : '/balances';
+    const response = await apiClient.get(endpoint);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error fetching balances:', error);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to fetch balances'
+    } as any;
+  }
 };
 
 /**
@@ -60,19 +48,16 @@ export const remindDebt = async (data: {
   creditor: string;
   amount: string;
 }): Promise<{ success: boolean; message: string }> => {
-  const request = {
-    endpoint: 'POST /api/balances/remind',
-    body: data,
-  };
-  console.log('[API] Request:', request);
-
-  const response = {
-    success: true,
-    message: `Reminder sent to ${data.debtor}`,
-  };
-  console.log('[API] Response:', response);
-
-  return Promise.resolve(response);
+  try {
+    const response = await apiClient.post('/balances/remind', data);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error sending reminder:', error);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to send reminder'
+    };
+  }
 };
 
 /**
@@ -86,26 +71,16 @@ export const settleUp = async (data: {
   date?: string;
   notes?: string;
 }): Promise<{ success: boolean; settlement: Settlement }> => {
-  const request = {
-    endpoint: 'POST /api/balances/settle',
-    body: data,
-  };
-  console.log('[API] Request:', request);
-
-  const response = {
-    success: true,
-    settlement: {
-      id: 'settlement_' + Date.now(),
-      from: data.from,
-      to: data.to,
-      amount: data.amount,
-      date: data.date || new Date().toISOString(),
-      notes: data.notes,
-    },
-  };
-  console.log('[API] Response:', response);
-
-  return Promise.resolve(response);
+  try {
+    const response = await apiClient.post('/balances/settle', data);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error settling up:', error);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to process settlement'
+    };
+  }
 };
 
 /**
@@ -115,19 +90,16 @@ export const addSettleUpDate = async (data: {
   settlementId: string;
   date: string;
 }): Promise<{ success: boolean; message: string }> => {
-  const request = {
-    endpoint: 'PUT /api/balances/settle/date',
-    body: data,
-  };
-  console.log('[API] Request:', request);
-
-  const response = {
-    success: true,
-    message: 'Settlement date added',
-  };
-  console.log('[API] Response:', response);
-
-  return Promise.resolve(response);
+  try {
+    const response = await apiClient.put('/balances/settle/date', data);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error adding settlement date:', error);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to add settlement date'
+    };
+  }
 };
 
 /**
@@ -137,18 +109,15 @@ export const addPeopleToSettleUp = async (data: {
   settlementId: string;
   userIds: string[];
 }): Promise<{ success: boolean; message: string }> => {
-  const request = {
-    endpoint: 'PUT /api/balances/settle/people',
-    body: data,
-  };
-  console.log('[API] Request:', request);
-
-  const response = {
-    success: true,
-    message: 'People added to settlement',
-  };
-  console.log('[API] Response:', response);
-
-  return Promise.resolve(response);
+  try {
+    const response = await apiClient.put('/balances/settle/people', data);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error adding people to settlement:', error);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to add people to settlement'
+    };
+  }
 };
 

@@ -95,8 +95,7 @@ export default function SettleUpScreen() {
         </ScrollView>
 
         {/* Floating Action Buttons */}
-        <FabButtons 
-          onScanPress={() => console.log('Scan pressed')}
+        <FabButtons
           onAddExpensePress={() => router.push('/add-expense')}
         />
       </SafeAreaView>

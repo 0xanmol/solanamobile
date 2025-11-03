@@ -1,7 +1,9 @@
 /**
  * Invites API
- * Mock implementations that log request/response data
+ * Real backend implementations
  */
+
+import apiClient from '../utils/api-client';
 
 export interface InviteLink {
   groupId: string;
@@ -13,36 +15,35 @@ export interface InviteLink {
  * Get group invite link
  */
 export const getInviteLink = async (groupId: string): Promise<InviteLink> => {
-  const request = {
-    endpoint: `GET /api/invites/${groupId}`,
-  };
-  console.log('[API] Request:', request);
-
-  const response: InviteLink = {
-    groupId,
-    link: `https://www.splitwise.com/join/P8Q4sFjdi5x+1v28fw?v=s`,
-  };
-  console.log('[API] Response:', response);
-
-  return Promise.resolve(response);
+  try {
+    const response = await apiClient.get(`/invites/${groupId}`);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error fetching invite link:', error);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to fetch invite link'
+    } as any;
+  }
 };
 
 /**
  * Copy invite link to clipboard
  */
 export const copyInviteLink = async (groupId: string): Promise<{ success: boolean; message: string }> => {
-  const request = {
-    endpoint: `GET /api/invites/${groupId}`,
-  };
-  console.log('[API] Request:', request);
-
-  const response = {
-    success: true,
-    message: 'Link copied to clipboard',
-  };
-  console.log('[API] Response:', response);
-
-  return Promise.resolve(response);
+  try {
+    const response = await apiClient.get(`/invites/${groupId}`);
+    return {
+      success: true,
+      message: 'Link copied to clipboard',
+    };
+  } catch (error: any) {
+    console.error('Error copying invite link:', error);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to copy invite link'
+    };
+  }
 };
 
 /**
@@ -52,55 +53,47 @@ export const shareInviteLink = async (
   groupId: string,
   method: 'sms' | 'email' | 'whatsapp' | 'other'
 ): Promise<{ success: boolean; message: string }> => {
-  const request = {
-    endpoint: `POST /api/invites/${groupId}/share`,
-    body: { method },
-  };
-  console.log('[API] Request:', request);
-
-  const response = {
-    success: true,
-    message: `Link shared via ${method}`,
-  };
-  console.log('[API] Response:', response);
-
-  return Promise.resolve(response);
+  try {
+    const response = await apiClient.post(`/invites/${groupId}/share`, { method });
+    return response.data;
+  } catch (error: any) {
+    console.error('Error sharing invite link:', error);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to share invite link'
+    };
+  }
 };
 
 /**
  * Change/regenerate invite link
  */
 export const changeInviteLink = async (groupId: string): Promise<{ success: boolean; link: string }> => {
-  const request = {
-    endpoint: `POST /api/invites/${groupId}/regenerate`,
-  };
-  console.log('[API] Request:', request);
-
-  const response = {
-    success: true,
-    link: `https://www.splitwise.com/join/NEW_LINK_${Date.now()}?v=s`,
-  };
-  console.log('[API] Response:', response);
-
-  return Promise.resolve(response);
+  try {
+    const response = await apiClient.post(`/invites/${groupId}/regenerate`);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error regenerating invite link:', error);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to regenerate invite link'
+    } as any;
+  }
 };
 
 /**
  * Join group via invite link
  */
 export const joinGroupByLink = async (inviteCode: string): Promise<{ success: boolean; groupId: string }> => {
-  const request = {
-    endpoint: 'POST /api/invites/join',
-    body: { inviteCode },
-  };
-  console.log('[API] Request:', request);
-
-  const response = {
-    success: true,
-    groupId: 'group_' + Date.now(),
-  };
-  console.log('[API] Response:', response);
-
-  return Promise.resolve(response);
+  try {
+    const response = await apiClient.post('/invites/join', { inviteCode });
+    return response.data;
+  } catch (error: any) {
+    console.error('Error joining group by link:', error);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to join group'
+    };
+  }
 };
 

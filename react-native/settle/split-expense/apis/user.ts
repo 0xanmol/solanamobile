@@ -1,7 +1,9 @@
 /**
  * User Profile API
- * Mock implementations that log request/response data
+ * Real backend implementations
  */
+
+import apiClient from '../utils/api-client';
 
 export interface User {
   id: string;
@@ -24,47 +26,32 @@ export interface UpdateProfileData {
  * Get current user profile
  */
 export const getCurrentUser = async (): Promise<User> => {
-  const request = {
-    endpoint: 'GET /api/user/profile',
-  };
-  console.log('[API] Request:', request);
-
-  const response: User = {
-    id: 'user_123',
-    name: 'Sai Kumar',
-    email: 'Hellosir999@gmail.com',
-    phoneNumber: '+919606933222',
-    currency: 'USD',
-    timezone: '(GMT+05:30) Chennai',
-    language: 'English',
-  };
-  console.log('[API] Response:', response);
-
-  return Promise.resolve(response);
+  try {
+    const response = await apiClient.get('/user/profile');
+    return response.data;
+  } catch (error: any) {
+    console.error('Error fetching user profile:', error);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to fetch user profile'
+    } as any;
+  }
 };
 
 /**
  * Update user profile
  */
 export const updateProfile = async (data: UpdateProfileData): Promise<{ success: boolean; user: User }> => {
-  const request = {
-    endpoint: 'PUT /api/user/profile',
-    body: data,
-  };
-  console.log('[API] Request:', request);
-
-  const response = {
-    success: true,
-    user: {
-      id: 'user_123',
-      name: data.name || 'Sai Kumar',
-      email: data.email || 'Hellosir999@gmail.com',
-      phoneNumber: data.phoneNumber,
-    },
-  };
-  console.log('[API] Response:', response);
-
-  return Promise.resolve(response);
+  try {
+    const response = await apiClient.put('/user/profile', data);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error updating profile:', error);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to update profile'
+    };
+  }
 };
 
 /**
@@ -74,55 +61,47 @@ export const updatePassword = async (
   currentPassword: string,
   newPassword: string
 ): Promise<{ success: boolean; message: string }> => {
-  const request = {
-    endpoint: 'PUT /api/user/password',
-    body: { currentPassword, newPassword },
-  };
-  console.log('[API] Request:', request);
-
-  const response = {
-    success: true,
-    message: 'Password updated successfully',
-  };
-  console.log('[API] Response:', response);
-
-  return Promise.resolve(response);
+  try {
+    const response = await apiClient.put('/user/password', { currentPassword, newPassword });
+    return response.data;
+  } catch (error: any) {
+    console.error('Error updating password:', error);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to update password'
+    };
+  }
 };
 
 /**
  * Upload profile image
  */
 export const uploadProfileImage = async (imageUri: string): Promise<{ success: boolean; imageUrl: string }> => {
-  const request = {
-    endpoint: 'POST /api/user/profile-image',
-    body: { imageUri },
-  };
-  console.log('[API] Request:', request);
-
-  const response = {
-    success: true,
-    imageUrl: imageUri,
-  };
-  console.log('[API] Response:', response);
-
-  return Promise.resolve(response);
+  try {
+    const response = await apiClient.post('/user/profile-image', { imageUri });
+    return response.data;
+  } catch (error: any) {
+    console.error('Error uploading profile image:', error);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to upload profile image'
+    } as any;
+  }
 };
 
 /**
  * Delete user account
  */
 export const deleteAccount = async (): Promise<{ success: boolean; message: string }> => {
-  const request = {
-    endpoint: 'DELETE /api/user/account',
-  };
-  console.log('[API] Request:', request);
-
-  const response = {
-    success: true,
-    message: 'Account deleted successfully',
-  };
-  console.log('[API] Response:', response);
-
-  return Promise.resolve(response);
+  try {
+    const response = await apiClient.delete('/user/account');
+    return response.data;
+  } catch (error: any) {
+    console.error('Error deleting account:', error);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Failed to delete account'
+    };
+  }
 };
 

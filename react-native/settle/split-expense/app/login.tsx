@@ -2,27 +2,58 @@ import { Colors } from '@/constants/colors';
 import { BorderRadius, Shadow, Spacing } from '@/constants/spacing';
 import { FontFamily, FontSize } from '@/constants/typography';
 import { router } from 'expo-router';
-import React from 'react';
+import React, { useState } from 'react';
 import {
+    ActivityIndicator,
+    Alert,
     StyleSheet,
     Text,
     TouchableOpacity,
     View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { connectWallet } from '@/apis/auth';
+
+// Hardcoded Solana public key for testing
+const HARDCODED_PUBKEY = '7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU';
 
 export default function LoginScreen() {
+  const [isConnecting, setIsConnecting] = useState(false);
 
-  const handleSignup = () => {
-    router.push('/signup');
-  };
+  const handleConnectWallet = async () => {
+    setIsConnecting(true);
 
-  const handleLogin = () => {
-    router.push('/signin');
-  };
+    try {
+      console.log('Connecting wallet with pubkey:', HARDCODED_PUBKEY);
+      const response = await connectWallet(HARDCODED_PUBKEY);
 
-  const handleGoogleSignin = () => {
-    router.replace('/(tabs)/groups');
+      if (response.success && response.data) {
+        console.log('Wallet connected:', response.data);
+
+        if (response.data.requiresProfileCompletion) {
+          // New user - navigate to profile completion
+          Alert.alert(
+            'Welcome!',
+            'Please complete your profile to continue.',
+            [{ text: 'OK', onPress: () => router.push('/signup') }]
+          );
+        } else {
+          // Existing user - navigate to main app
+          Alert.alert(
+            'Welcome back!',
+            `Logged in as ${response.data.user.name || 'User'}`,
+            [{ text: 'OK', onPress: () => router.replace('/(tabs)/groups') }]
+          );
+        }
+      } else {
+        Alert.alert('Connection Failed', response.message || 'Failed to connect wallet');
+      }
+    } catch (error: any) {
+      console.error('Wallet connection error:', error);
+      Alert.alert('Error', 'Failed to connect wallet. Please try again.');
+    } finally {
+      setIsConnecting(false);
+    }
   };
 
   return (
@@ -42,37 +73,33 @@ export default function LoginScreen() {
               </View>
             </View>
           </View>
-          <Text style={styles.appName}>Splitwise</Text>
+          <Text style={styles.appName}>Settle</Text>
+          <Text style={styles.appSubtitle}>Powered by Solana</Text>
         </View>
 
         {/* Buttons Section */}
         <View style={styles.buttonsContainer}>
           <TouchableOpacity
-            style={styles.signupButton}
-            onPress={handleSignup}
+            style={[styles.connectButton, isConnecting && styles.connectButtonDisabled]}
+            onPress={handleConnectWallet}
             activeOpacity={0.8}
+            disabled={isConnecting}
           >
-            <Text style={styles.signupButtonText}>Sign up</Text>
+            {isConnecting ? (
+              <ActivityIndicator color={Colors.white} />
+            ) : (
+              <>
+                <View style={styles.walletIconWrapper}>
+                  <Text style={styles.walletIcon}>◎</Text>
+                </View>
+                <Text style={styles.connectButtonText}>Connect Wallet</Text>
+              </>
+            )}
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.loginButton}
-            onPress={handleLogin}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.loginButtonText}>Log in</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.googleButton}
-            onPress={handleGoogleSignin}
-            activeOpacity={0.8}
-          >
-            <View style={styles.googleIconWrapper}>
-              <Text style={styles.googleG}>G</Text>
-            </View>
-            <Text style={styles.googleButtonText}>Sign in with Google</Text>
-          </TouchableOpacity>
+          <Text style={styles.testNote}>
+            (Using test wallet for demo)
+          </Text>
 
           {/* Footer Links */}
           <View style={styles.footer}>
@@ -167,69 +194,56 @@ const styles = StyleSheet.create({
     letterSpacing: -0.3,
     fontFamily: FontFamily.poppinsSemiBold,
   },
+  appSubtitle: {
+    fontSize: FontSize.md,
+    color: Colors.textTertiary,
+    marginTop: Spacing.xs,
+    fontFamily: FontFamily.poppinsRegular,
+  },
   buttonsContainer: {
     gap: Spacing.sm,
     paddingBottom: Spacing.md,
   },
-  signupButton: {
-    backgroundColor: Colors.primary,
+  connectButton: {
+    backgroundColor: '#14F195',
     borderRadius: BorderRadius.lg,
-    paddingVertical: Spacing.md,
-    alignItems: 'center',
-    ...Shadow.base,
-  },
-  signupButtonText: {
-    color: Colors.white,
-    fontSize: FontSize.lg,
-    fontWeight: '600',
-    letterSpacing: 0.2,
-    fontFamily: FontFamily.poppinsSemiBold,
-  },
-  loginButton: {
-    backgroundColor: Colors.white,
-    borderRadius: BorderRadius.lg,
-    paddingVertical: Spacing.md,
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: Colors.border,
-    ...Shadow.sm,
-  },
-  loginButtonText: {
-    color: Colors.textSecondary,
-    fontSize: FontSize.lg,
-    fontWeight: '500',
-    fontFamily: FontFamily.poppinsMedium,
-  },
-  googleButton: {
-    backgroundColor: Colors.white,
-    borderRadius: BorderRadius.lg,
-    paddingVertical: Spacing.md,
+    paddingVertical: Spacing.lg,
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: Spacing.sm,
-    borderWidth: 1.5,
-    borderColor: Colors.border,
-    ...Shadow.sm,
+    gap: Spacing.md,
+    ...Shadow.md,
   },
-  googleIconWrapper: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: '#4285F4',
+  connectButtonDisabled: {
+    opacity: 0.6,
+  },
+  walletIconWrapper: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  googleG: {
+  walletIcon: {
     color: Colors.white,
-    fontSize: FontSize.sm,
-    fontWeight: '600',
+    fontSize: 20,
+    fontWeight: '700',
   },
-  googleButtonText: {
-    color: Colors.textSecondary,
+  connectButtonText: {
+    color: '#1a1a2e',
     fontSize: FontSize.lg,
-    fontWeight: '500',
-    fontFamily: FontFamily.poppinsMedium,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+    fontFamily: FontFamily.poppinsSemiBold,
+  },
+  testNote: {
+    textAlign: 'center',
+    color: Colors.textTertiary,
+    fontSize: FontSize.sm,
+    marginTop: Spacing.sm,
+    fontFamily: FontFamily.poppinsRegular,
+    fontStyle: 'italic',
   },
   footer: {
     flexDirection: 'row',
