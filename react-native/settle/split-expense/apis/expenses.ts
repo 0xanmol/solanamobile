@@ -38,7 +38,7 @@ export interface CreateExpenseData {
   date?: string;
   paidBy: string;
   groupId?: string;
-  friendIds?: string[];
+  participants?: { userId: string, share: number }[];
   splitMethod?: 'equally' | 'unequally' | 'percentages' | 'shares' | 'adjustment';
   notes?: string;
 }

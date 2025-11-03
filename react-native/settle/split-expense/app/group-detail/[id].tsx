@@ -147,7 +147,9 @@ export default function GroupDetailScreen() {
           {activeTab === 'charts' && (<View style={styles.mainBody}><Text style={styles.title}>Charts</Text><Text style={styles.subtitle}>Charts content coming soon</Text></View>)}
           {!['settle-up', 'charts'].includes(activeTab) && (<View style={styles.mainBody}><Text style={styles.title}>You are all settled up</Text><Text style={styles.subtitle}>Tap to show settled expenses</Text><View style={styles.checkmarkContainer}><View style={[styles.checkmarkPart, styles.checkmarkPart1]} /><View style={[styles.checkmarkPart, styles.checkmarkPart2]} /><View style={[styles.checkmarkPart, styles.checkmarkPart3]} /><View style={[styles.checkmarkPart, styles.checkmarkPart4]} /><View style={[styles.checkmarkPart, styles.checkmarkPart5]} /></View></View>)}
         </ScrollView>
-        <FabButtons onAddExpensePress={() => router.push('/add-expense')} />
+                <FabButtons
+                  onAddExpensePress={() => router.push({ pathname: '/add-expense', params: { groupId: id } })}
+                />
       </SafeAreaView>
     </TabLayoutWrapper>
   );
