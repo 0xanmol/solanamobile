@@ -4,9 +4,11 @@ import { FontFamily, FontSize } from "@/constants/typography";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useRouter } from "expo-router";
-import React, { useMemo } from "react";
+import React, { useState } from "react";
+import { addFriend } from "@/apis/friends";
 import {
-  Image,
+  Alert,
+  ActivityIndicator,
   Platform,
   ScrollView,
   StyleSheet,
@@ -17,32 +19,90 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-interface ContactItem {
-  id: string;
-  name: string;
-  phone: string;
-  avatarUri?: string;
-  alreadyFriend?: boolean;
-}
-
 export default function AddFriendsScreen() {
   const router = useRouter();
+  const [addMethod, setAddMethod] = useState<"pubkey" | "phone">("pubkey");
+  const [pubkey, setPubkey] = useState("");
+  const [phone, setPhone] = useState("");
+  const [name, setName] = useState("");
+  const [isAdding, setIsAdding] = useState(false);
 
-  const contacts: ContactItem[] = useMemo(
-    () => [
-      { id: "c1", name: "1", phone: "+919606933222", alreadyFriend: true },
-      { id: "c2", name: "2", phone: "+919606933222" },
-      { id: "c3", name: "AJAY Fmcg VERMA", phone: "+918619282800" },
-      { id: "c4", name: "AJAY SINGH HADA", phone: "+917891672343" },
-      { id: "c5", name: "ARVIND KU.MEHRA", phone: "+917737423537" },
-      { id: "c6", name: "Aakash Kashyap", phone: "+919911079670" },
-      { id: "c7", name: "Aarav", phone: "", alreadyFriend: true },
-      { id: "c8", name: "Aashir sheikh", phone: "+918107017913" },
-      { id: "c9", name: "Aashish", phone: "+917878148667" },
-      { id: "c10", name: "Abczyz", phone: "+917317157597" },
-    ],
-    []
-  );
+  const handleAddFriend = async () => {
+    if (addMethod === "pubkey") {
+      if (!pubkey.trim()) {
+        Alert.alert("Error", "Please enter a public key");
+        return;
+      }
+
+      // Basic pubkey validation (should be reasonably long, alphanumeric)
+      const trimmedPubkey = pubkey.trim();
+      if (trimmedPubkey.length < 20) {
+        Alert.alert("Error", "Public key seems too short. Please enter a valid public key.");
+        return;
+      }
+
+      if (!/^[A-Za-z0-9]+$/.test(trimmedPubkey)) {
+        Alert.alert("Error", "Public key should only contain letters and numbers");
+        return;
+      }
+
+      setIsAdding(true);
+      try {
+        const result = await addFriend({ pubkey: pubkey.trim() });
+        if (result.success) {
+          Alert.alert("Success", "Friend added successfully!", [
+            {
+              text: "OK",
+              onPress: () => {
+                setPubkey("");
+                router.back();
+              },
+            },
+          ]);
+        } else {
+          Alert.alert("Error", result.message || "Failed to add friend");
+        }
+      } catch (error) {
+        console.error("Error adding friend:", error);
+        Alert.alert("Error", "Failed to add friend. Please try again.");
+      } finally {
+        setIsAdding(false);
+      }
+    } else {
+      // Phone number method
+      if (!phone.trim()) {
+        Alert.alert("Error", "Please enter a phone number");
+        return;
+      }
+
+      setIsAdding(true);
+      try {
+        const result = await addFriend({
+          phone: phone.trim(),
+          name: name.trim() || undefined
+        });
+        if (result.success) {
+          Alert.alert("Success", "Friend added successfully!", [
+            {
+              text: "OK",
+              onPress: () => {
+                setPhone("");
+                setName("");
+                router.back();
+              },
+            },
+          ]);
+        } else {
+          Alert.alert("Error", result.message || "Failed to add friend");
+        }
+      } catch (error) {
+        console.error("Error adding friend:", error);
+        Alert.alert("Error", "Failed to add friend. Please try again.");
+      } finally {
+        setIsAdding(false);
+      }
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -57,86 +117,179 @@ export default function AddFriendsScreen() {
             color={Colors.textPrimary}
           />
         </TouchableOpacity>
-        <View style={styles.searchInputContainer}>
-          <TextInput
-            placeholder="Enter name, email, or phone #"
-            placeholderTextColor={Colors.textTertiary}
-            style={styles.searchInput}
-          />
-        </View>
-        <TouchableOpacity style={styles.headerIcon}>
-          <MaterialIcons name="check" size={24} color={Colors.textPrimary} />
-        </TouchableOpacity>
-      </View>
-
-      <TouchableOpacity style={styles.addSomeoneRow}>
-        <MaterialCommunityIcons
-          name="account-plus-outline"
-          size={24}
-          color={Colors.textPrimary}
-        />
-        <Text style={[styles.addSomeoneText, styles.fontSemibold]}>
-          Add someone new
-        </Text>
-      </TouchableOpacity>
-
-      <View style={styles.sectionHeader}>
-        <Text style={[styles.sectionTitle, styles.fontMedium]}>
-          From your contacts
-        </Text>
+        <Text style={styles.headerTitle}>Add Friend</Text>
+        <View style={styles.headerIcon} />
       </View>
 
       <ScrollView
-        style={styles.list}
-        contentContainerStyle={styles.listContent}
+        style={styles.content}
+        contentContainerStyle={styles.contentContainer}
         showsVerticalScrollIndicator={false}
-        showsHorizontalScrollIndicator={false}
-        horizontal={false}
       >
-        {contacts.map((c) => (
-          <View key={c.id} style={styles.row}>
+        {/* Method Selector Tabs */}
+        <View style={styles.tabContainer}>
+          <TouchableOpacity
+            style={[
+              styles.tab,
+              addMethod === "pubkey" && styles.activeTab,
+            ]}
+            onPress={() => setAddMethod("pubkey")}
+          >
+            <MaterialCommunityIcons
+              name="wallet-outline"
+              size={20}
+              color={addMethod === "pubkey" ? "#7C3AED" : Colors.textSecondary}
+            />
+            <Text
+              style={[
+                styles.tabText,
+                styles.fontMedium,
+                addMethod === "pubkey" && styles.activeTabText,
+              ]}
+            >
+              Public Key
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.tab,
+              addMethod === "phone" && styles.activeTab,
+            ]}
+            onPress={() => setAddMethod("phone")}
+          >
             <MaterialIcons
               name="phone"
               size={20}
-              color="#6B7280"
-              style={{ width: 28 }}
+              color={addMethod === "phone" ? "#7C3AED" : Colors.textSecondary}
             />
-            <View style={styles.avatarBox}>
-              {c.avatarUri ? (
-                <Image source={{ uri: c.avatarUri }} style={styles.avatar} />
-              ) : (
-                <View style={styles.generatedAvatar} />
-              )}
-            </View>
-            <View style={styles.rowText}>
-              <Text
-                style={[styles.rowTitle, styles.fontMedium]}
-                numberOfLines={1}
-                ellipsizeMode="tail"
-              >
-                {c.name}
+            <Text
+              style={[
+                styles.tabText,
+                styles.fontMedium,
+                addMethod === "phone" && styles.activeTabText,
+              ]}
+            >
+              Phone Number
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {addMethod === "pubkey" ? (
+          <>
+            <View style={styles.instructionContainer}>
+              <MaterialCommunityIcons
+                name="wallet-outline"
+                size={48}
+                color={Colors.textSecondary}
+              />
+              <Text style={[styles.instructionTitle, styles.fontSemibold]}>
+                Add Friend by Wallet Address
               </Text>
-              <Text
-                style={[styles.rowSubtitle, styles.fontRegular]}
-                numberOfLines={1}
-                ellipsizeMode="tail"
-              >
-                {c.alreadyFriend ? "Already a friend" : c.phone}
+              <Text style={[styles.instructionText, styles.fontRegular]}>
+                Enter your friend's Solana public key to add them to your friends list
               </Text>
             </View>
-            <View style={styles.rowRight}>
-              {c.alreadyFriend ? (
-                <MaterialIcons name="check" size={22} color={Colors.gray300} />
-              ) : (
-                <TouchableOpacity style={styles.invitePill}>
-                  <Text style={[styles.invitePillText, styles.fontSemibold]}>
-                    Invite
-                  </Text>
-                </TouchableOpacity>
-              )}
+
+            <View style={styles.inputSection}>
+              <Text style={[styles.inputLabel, styles.fontMedium]}>
+                Solana Public Key
+              </Text>
+              <TextInput
+                style={[styles.pubkeyInput, styles.fontRegular]}
+                placeholder="Enter public key (e.g., 7xKXtg2CW87d97TXJ...)"
+                placeholderTextColor={Colors.textTertiary}
+                value={pubkey}
+                onChangeText={setPubkey}
+                autoCapitalize="none"
+                autoCorrect={false}
+                multiline
+                numberOfLines={2}
+              />
+              <Text style={[styles.helperText, styles.fontRegular]}>
+                Public keys are typically 32-44 characters long
+              </Text>
             </View>
-          </View>
-        ))}
+          </>
+        ) : (
+          <>
+            <View style={styles.instructionContainer}>
+              <MaterialIcons
+                name="phone"
+                size={48}
+                color={Colors.textSecondary}
+              />
+              <Text style={[styles.instructionTitle, styles.fontSemibold]}>
+                Add Friend by Phone Number
+              </Text>
+              <Text style={[styles.instructionText, styles.fontRegular]}>
+                Enter your friend's phone number to add them to your friends list
+              </Text>
+            </View>
+
+            <View style={styles.inputSection}>
+              <Text style={[styles.inputLabel, styles.fontMedium]}>
+                Name (Optional)
+              </Text>
+              <TextInput
+                style={[styles.input, styles.fontRegular]}
+                placeholder="Enter friend's name"
+                placeholderTextColor={Colors.textTertiary}
+                value={name}
+                onChangeText={setName}
+                autoCapitalize="words"
+              />
+            </View>
+
+            <View style={styles.inputSection}>
+              <Text style={[styles.inputLabel, styles.fontMedium]}>
+                Phone Number
+              </Text>
+              <TextInput
+                style={[styles.input, styles.fontRegular]}
+                placeholder="Enter phone number (e.g., +1234567890)"
+                placeholderTextColor={Colors.textTertiary}
+                value={phone}
+                onChangeText={setPhone}
+                keyboardType="phone-pad"
+                autoCapitalize="none"
+              />
+              <Text style={[styles.helperText, styles.fontRegular]}>
+                Include country code (e.g., +1 for US)
+              </Text>
+            </View>
+          </>
+        )}
+
+        <TouchableOpacity
+          style={[
+            styles.addButton,
+            ((addMethod === "pubkey" && !pubkey.trim()) ||
+              (addMethod === "phone" && !phone.trim()) ||
+              isAdding) &&
+              styles.addButtonDisabled,
+          ]}
+          onPress={handleAddFriend}
+          disabled={
+            (addMethod === "pubkey" && !pubkey.trim()) ||
+            (addMethod === "phone" && !phone.trim()) ||
+            isAdding
+          }
+        >
+          {isAdding ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <>
+              <MaterialCommunityIcons
+                name="account-plus"
+                size={20}
+                color="#FFFFFF"
+              />
+              <Text style={[styles.addButtonText, styles.fontSemibold]}>
+                Add Friend
+              </Text>
+            </>
+          )}
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -147,10 +300,11 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: Spacing.md,
-    paddingTop: Spacing.sm,
-    paddingBottom: Spacing.sm,
-    gap: Spacing.sm,
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.borderLight,
   },
   headerIcon: {
     width: 40,
@@ -158,82 +312,121 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  searchInputContainer: {
+  headerTitle: {
+    fontSize: FontSize["2xl"],
+    fontFamily: FontFamily.poppinsSemiBold,
+    color: Colors.textPrimary,
+  },
+  content: {
     flex: 1,
-    height: 40,
-    borderRadius: BorderRadius["2xl"],
+  },
+  contentContainer: {
+    padding: Spacing.lg,
+  },
+  tabContainer: {
+    flexDirection: "row",
+    backgroundColor: Colors.borderLight,
+    borderRadius: BorderRadius.lg,
+    padding: 4,
+    marginBottom: Spacing.xl,
+  },
+  tab: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    borderRadius: BorderRadius.md,
+    gap: Spacing.xs,
+  },
+  activeTab: {
+    backgroundColor: Colors.white,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  tabText: {
+    fontSize: FontSize.sm,
+    color: Colors.textSecondary,
+  },
+  activeTabText: {
+    color: "#7C3AED",
+  },
+  instructionContainer: {
+    alignItems: "center",
+    paddingVertical: Spacing.lg,
+    marginBottom: Spacing.lg,
+  },
+  instructionTitle: {
+    fontSize: FontSize.xl,
+    color: Colors.textPrimary,
+    marginTop: Spacing.md,
+    marginBottom: Spacing.sm,
+  },
+  instructionText: {
+    fontSize: FontSize.md,
+    color: Colors.textSecondary,
+    textAlign: "center",
+    paddingHorizontal: Spacing.lg,
+    lineHeight: 22,
+  },
+  inputSection: {
+    marginBottom: Spacing["2xl"],
+  },
+  inputLabel: {
+    fontSize: FontSize.md,
+    color: Colors.textPrimary,
+    marginBottom: Spacing.sm,
+  },
+  input: {
     borderWidth: 1,
     borderColor: Colors.border,
-    backgroundColor: Colors.white,
-    paddingHorizontal: Spacing.md,
-    justifyContent: "center",
-    alignItems: "stretch",
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: FontSize.md,
-    fontFamily: FontFamily.poppinsRegular,
-    color: Colors.textPrimary,
-    padding: 0,
-    margin: 0,
-    minHeight: 0,
-    maxHeight: 40,
-    paddingVertical: 0,
-    textAlignVertical: Platform.select({
-      android: "center" as const,
-      default: undefined,
-    }),
-    includeFontPadding: Platform.select({ android: false, default: undefined }),
-  },
-  addSomeoneRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.sm,
+    borderRadius: BorderRadius.lg,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.borderLight,
-  },
-  addSomeoneText: { fontSize: FontSize.xl, color: Colors.textPrimary },
-  sectionHeader: { paddingHorizontal: Spacing.md, paddingVertical: Spacing.sm },
-  sectionTitle: { color: Colors.textSecondary, fontSize: FontSize.md },
-  list: { flex: 1 },
-  listContent: { paddingBottom: Spacing["2xl"] },
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.borderLight,
+    fontSize: FontSize.md,
+    color: Colors.textPrimary,
     backgroundColor: Colors.white,
-    width: "100%",
   },
-  avatarBox: { width: 44, height: 44, marginRight: Spacing.sm },
-  avatar: { width: 44, height: 44, borderRadius: 22 },
-  generatedAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: Colors.border,
+  pubkeyInput: {
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: BorderRadius.lg,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.md,
+    fontSize: FontSize.md,
+    color: Colors.textPrimary,
+    backgroundColor: Colors.white,
+    minHeight: 80,
+    textAlignVertical: "top",
   },
-  rowText: { flex: 1 },
-  rowTitle: { fontSize: FontSize.lg, color: Colors.textPrimary, flex: 1 },
-  rowSubtitle: {
+  helperText: {
     fontSize: FontSize.sm,
     color: Colors.textTertiary,
-    marginTop: 2,
-    flex: 1,
+    marginTop: Spacing.sm,
   },
-  rowRight: { width: 60, alignItems: "flex-end" },
-  invitePill: {
-    borderWidth: 1,
-    borderColor: Colors.gray300,
-    borderRadius: BorderRadius["2xl"],
-    paddingVertical: 6,
-    paddingHorizontal: Spacing.sm,
+  addButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#7C3AED",
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: BorderRadius.lg,
+    gap: Spacing.sm,
+    marginTop: Spacing.lg,
   },
-  invitePillText: { color: Colors.textPrimary },
+  addButtonDisabled: {
+    backgroundColor: Colors.gray300,
+    opacity: 0.6,
+  },
+  addButtonText: {
+    fontSize: FontSize.lg,
+    color: "#FFFFFF",
+  },
   fontRegular: { fontFamily: FontFamily.poppinsRegular },
   fontMedium: { fontFamily: FontFamily.poppinsMedium },
   fontSemibold: { fontFamily: FontFamily.poppinsSemiBold },

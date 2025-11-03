@@ -7,6 +7,8 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { getGroups, Group as APIGroup } from '@/apis/groups';
+import { getBalances, Balance } from '@/apis/balances';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   Modal,
   ScrollView,
@@ -58,33 +60,84 @@ export default function GroupsScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [allGroups, setAllGroups] = useState<any[]>([]);
   const [allUsers] = useState<any[]>([]);
+  const [overallBalance, setOverallBalance] = useState<{ youOwe: number; youAreOwed: number }>({ youOwe: 0, youAreOwed: 0 });
 
   useFocusEffect(
     useCallback(() => {
       const fetchGroups = async () => {
         setIsLoading(true);
         try {
-                const response = await getGroups();
-                if (response && response.success && Array.isArray(response.data)) {
-                  const mappedGroups = response.data.map((group: APIGroup) => ({
-                    id: group.id,
-                    name: group.name,
-                    status: 'settled up',
-                    tileColor: group.color || '#781D27',
-                    icon: getGroupIcon(group.type),
-                  }));
-                  setGroups(mappedGroups);
-                  setAllGroups(response.data.map((group: APIGroup) => ({
-                    id: group.id,
-                    name: group.name,
-                    type: group.type,
-                  })));
-                } else {
-                  // This can happen if the API returns an error.
-                  console.warn('Could not fetch groups or no groups found.');
-                  setGroups([]);
-                  setAllGroups([]);
-                }        } catch (error) {
+          // Get current user
+          const userJson = await AsyncStorage.getItem('user_data');
+          const currentUser = userJson ? JSON.parse(userJson) : null;
+
+          if (!currentUser) {
+            console.warn('No current user found');
+            setGroups([]);
+            setAllGroups([]);
+            setIsLoading(false);
+            return;
+          }
+
+          const response = await getGroups();
+          if (response && response.success && Array.isArray(response.data)) {
+            let totalYouOwe = 0;
+            let totalYouAreOwed = 0;
+
+            // Fetch balances for each group and calculate status
+            const mappedGroupsPromises = response.data.map(async (group: APIGroup) => {
+              const balancesResponse = await getBalances(group.id);
+              let status = 'settled up';
+
+              if (balancesResponse && balancesResponse.success && Array.isArray(balancesResponse.data)) {
+                const balances: Balance[] = balancesResponse.data;
+
+                // Calculate user's balance in this group
+                // Note: Backend returns balances where userId is the OTHER person
+                // type 'owes' = current user owes, 'gets_back' = current user is owed
+                let groupBalance = 0;
+                balances.forEach((balance) => {
+                  if (balance.type === 'owes') {
+                    groupBalance -= balance.amount;
+                    totalYouOwe += balance.amount;
+                  } else if (balance.type === 'gets_back') {
+                    groupBalance += balance.amount;
+                    totalYouAreOwed += balance.amount;
+                  }
+                });
+
+                // Set status based on balance
+                if (groupBalance < 0) {
+                  status = `you owe ${Math.abs(groupBalance).toFixed(2)}`;
+                } else if (groupBalance > 0) {
+                  status = `you are owed ${groupBalance.toFixed(2)}`;
+                }
+              }
+
+              return {
+                id: group.id,
+                name: group.name,
+                status,
+                tileColor: group.color || '#781D27',
+                icon: getGroupIcon(group.type),
+              };
+            });
+
+            const mappedGroups = await Promise.all(mappedGroupsPromises);
+            setGroups(mappedGroups);
+            setOverallBalance({ youOwe: totalYouOwe, youAreOwed: totalYouAreOwed });
+
+            setAllGroups(response.data.map((group: APIGroup) => ({
+              id: group.id,
+              name: group.name,
+              type: group.type,
+            })));
+          } else {
+            console.warn('Could not fetch groups or no groups found.');
+            setGroups([]);
+            setAllGroups([]);
+          }
+        } catch (error) {
           console.error('Error fetching groups:', error);
         } finally {
           setIsLoading(false);
@@ -161,7 +214,13 @@ export default function GroupsScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.settledUpHeader}>
-            <Text style={styles.settledUpText}>You are all settled up!</Text>
+            <Text style={styles.settledUpText}>
+              {overallBalance.youOwe === 0 && overallBalance.youAreOwed === 0
+                ? 'You are all settled up!'
+                : overallBalance.youOwe > overallBalance.youAreOwed
+                ? `You owe ${(overallBalance.youOwe - overallBalance.youAreOwed).toFixed(2)} overall`
+                : `You are owed ${(overallBalance.youAreOwed - overallBalance.youOwe).toFixed(2)} overall`}
+            </Text>
             <TouchableOpacity style={styles.filterButton} onPress={() => setShowFilterModal(true)}>
               <MaterialIcons name="tune" size={24} color="#6B7280" />
             </TouchableOpacity>

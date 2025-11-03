@@ -38,9 +38,9 @@ export const getFriends = async (): Promise<Friend[]> => {
 };
 
 /**
- * Add friend by email/name
+ * Add friend by pubkey, phone, email, or name
  */
-export const addFriend = async (data: { name: string; email: string }): Promise<{ success: boolean; friend: Friend }> => {
+export const addFriend = async (data: { pubkey?: string; phone?: string; name?: string; email?: string }): Promise<{ success: boolean; data?: Friend; message?: string }> => {
   try {
     const response = await apiClient.post('/friends', data);
     return response.data;

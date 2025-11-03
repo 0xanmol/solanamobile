@@ -8,15 +8,14 @@ const router = express.Router();
 // Calculate balances for a user
 const calculateBalances = async (userId, groupId = null) => {
   const balances = {};
+  const processedExpenses = new Set();
 
   // Get all expenses involving the user
   let expenseQuery = `
-    SELECT e.*, ep.user_id, ep.share
+    SELECT DISTINCT e.id, e.group_id, e.description, e.amount, e.paid_by, e.date
     FROM expenses e
     INNER JOIN expense_participants ep ON e.id = ep.expense_id
-    WHERE (e.id IN (
-      SELECT expense_id FROM expense_participants WHERE user_id = ?
-    ) OR e.paid_by = ?)
+    WHERE (ep.user_id = ? OR e.paid_by = ?)
   `;
   const params = [userId, userId];
 
@@ -29,6 +28,12 @@ const calculateBalances = async (userId, groupId = null) => {
 
   // Calculate what user owes/is owed from expenses
   for (const expense of expenses) {
+    // Skip if already processed (prevent double counting)
+    if (processedExpenses.has(expense.id)) {
+      continue;
+    }
+    processedExpenses.add(expense.id);
+
     if (expense.paid_by === userId) {
       // User paid - they are owed by participants
       const participants = await db.all(
@@ -42,12 +47,19 @@ const calculateBalances = async (userId, groupId = null) => {
         }
         balances[participant.user_id] += participant.share;
       }
-    } else if (expense.user_id === userId) {
-      // User owes the payer
-      if (!balances[expense.paid_by]) {
-        balances[expense.paid_by] = 0;
+    } else {
+      // User is a participant - they owe the payer
+      const userShare = await db.get(
+        'SELECT share FROM expense_participants WHERE expense_id = ? AND user_id = ?',
+        [expense.id, userId]
+      );
+
+      if (userShare) {
+        if (!balances[expense.paid_by]) {
+          balances[expense.paid_by] = 0;
+        }
+        balances[expense.paid_by] -= userShare.share;
       }
-      balances[expense.paid_by] -= expense.share;
     }
   }
 

@@ -4,8 +4,11 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import { useRouter, useFocusEffect } from 'expo-router';
+import React, { useState, useCallback } from 'react';
+import { getFriends } from '@/apis/friends';
+import { getBalances, Balance } from '@/apis/balances';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
     Modal,
     ScrollView,
@@ -20,8 +23,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 interface Friend {
   id: string;
   name: string;
-  email: string;
-  avatar?: string;
+  pubkey?: string;
+  phone?: string;
+  avatar_uri?: string;
+  balance?: number;
+  status?: string;
 }
 
 export default function FriendsScreen() {
@@ -32,17 +38,89 @@ export default function FriendsScreen() {
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'outstanding' | 'owe' | 'owed'>('all');
-  
+
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
 
-  const [friends] = useState<Friend[]>([
-    {
-      id: '1',
-      name: 'Aarav',
-      email: 'aarav@example.com',
-    },
-  ]);
+  const [friends, setFriends] = useState<Friend[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [overallBalance, setOverallBalance] = useState<{ youOwe: number; youAreOwed: number }>({ youOwe: 0, youAreOwed: 0 });
+
+  useFocusEffect(
+    useCallback(() => {
+      const fetchFriends = async () => {
+        setIsLoading(true);
+        try {
+          // Get current user
+          const userJson = await AsyncStorage.getItem('user_data');
+          const currentUser = userJson ? JSON.parse(userJson) : null;
+
+          if (!currentUser) {
+            console.warn('No current user found');
+            setFriends([]);
+            setIsLoading(false);
+            return;
+          }
+
+          // Fetch friends
+          const friendsResponse = await getFriends();
+          if (friendsResponse && friendsResponse.success && Array.isArray(friendsResponse.data)) {
+            // Fetch overall balances
+            const balancesResponse = await getBalances();
+            let totalYouOwe = 0;
+            let totalYouAreOwed = 0;
+
+            // Create a map of balances by userId for quick lookup
+            const balanceMap = new Map<string, { amount: number; type: string }>();
+            if (balancesResponse && balancesResponse.success && Array.isArray(balancesResponse.data)) {
+              balancesResponse.data.forEach((b: Balance) => {
+                balanceMap.set(b.userId, { amount: b.amount, type: b.type });
+
+                // Calculate totals
+                if (b.type === 'owes') {
+                  totalYouOwe += b.amount;
+                } else if (b.type === 'gets_back') {
+                  totalYouAreOwed += b.amount;
+                }
+              });
+            }
+
+            // Map friends with their balances
+            const friendsWithBalances = friendsResponse.data.map((friend: any) => {
+              const balanceInfo = balanceMap.get(friend.id);
+              let status = 'no expenses';
+
+              if (balanceInfo) {
+                if (balanceInfo.type === 'owes') {
+                  status = `you owe ${balanceInfo.amount.toFixed(2)}`;
+                } else if (balanceInfo.type === 'gets_back') {
+                  status = `owes you ${balanceInfo.amount.toFixed(2)}`;
+                }
+              }
+
+              return {
+                ...friend,
+                balance: balanceInfo ? balanceInfo.amount : 0,
+                status,
+              };
+            });
+
+            setFriends(friendsWithBalances);
+            setOverallBalance({ youOwe: totalYouOwe, youAreOwed: totalYouAreOwed });
+          } else {
+            console.warn('Could not fetch friends');
+            setFriends([]);
+          }
+        } catch (error) {
+          console.error('Error fetching friends:', error);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      fetchFriends();
+    }, [])
+  );
 
   const handleAddFriend = () => {
     console.log('Adding friend:', {
@@ -60,12 +138,12 @@ export default function FriendsScreen() {
       style={styles.friendCard}
     >
       <View style={styles.friendAvatar}>
-        <MaterialIcons name="mail" size={24} color="#6B7280" />
+        <MaterialIcons name="person" size={24} color="#6B7280" />
       </View>
       <View style={styles.friendInfo}>
         <Text style={styles.friendName}>{friend.name}</Text>
       </View>
-      <Text style={styles.friendStatus}>no expenses</Text>
+      <Text style={styles.friendStatus}>{friend.status || 'no expenses'}</Text>
     </TouchableOpacity>
   );
 
@@ -92,20 +170,21 @@ export default function FriendsScreen() {
           nestedScrollEnabled={true}
         >
           <View style={styles.settledUpHeader}>
-            <Text style={styles.settledUpText}>You are all settled up!</Text>
+            <Text style={styles.settledUpText}>
+              {overallBalance.youOwe === 0 && overallBalance.youAreOwed === 0
+                ? 'You are all settled up!'
+                : overallBalance.youOwe > overallBalance.youAreOwed
+                ? `You owe ${(overallBalance.youOwe - overallBalance.youAreOwed).toFixed(2)} overall`
+                : `You are owed ${(overallBalance.youAreOwed - overallBalance.youOwe).toFixed(2)} overall`}
+            </Text>
             <TouchableOpacity style={styles.filterButton} onPress={() => setShowFilterModal(true)}>
               <MaterialIcons name="tune" size={24} color="#6B7280" />
             </TouchableOpacity>
           </View>
 
-          <ScrollView 
-            horizontal={true}
-            showsHorizontalScrollIndicator={false}
-            style={styles.horizontalScrollContainer}
-            contentContainerStyle={styles.friendsList}
-          >
+          <View style={styles.friendsList}>
             {friends.map(renderFriendCard)}
-          </ScrollView>
+          </View>
 
           <TouchableOpacity style={styles.addMoreFriendsButton} onPress={() => router.push('/add-friends')}>
             <MaterialCommunityIcons name="account-plus" size={24} color="#16A34A" />
@@ -343,19 +422,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  horizontalScrollContainer: {
-    marginBottom: 16,
-  },
   friendsList: {
     gap: 8,
-    paddingHorizontal: 20,
+    marginBottom: 16,
   },
   friendCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
-    minWidth: 200,
-    marginRight: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
   },
   friendAvatar: {
     width: 40,

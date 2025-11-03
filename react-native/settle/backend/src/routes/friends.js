@@ -29,22 +29,31 @@ router.get('/', authMiddleware, async (req, res) => {
   }
 });
 
-// Add friend (by pubkey or userId)
+// Add friend (by pubkey, phone, or userId)
 router.post('/', authMiddleware, async (req, res) => {
   try {
-    const { userId, pubkey, name, email } = req.body;
+    const { userId, pubkey, phone, name, email } = req.body;
     let friendId = userId;
 
     // If pubkey provided, find user by pubkey
     if (pubkey && !userId) {
       const user = await db.get('SELECT id FROM users WHERE pubkey = ?', [pubkey]);
       if (!user) {
-        return res.status(404).json({ success: false, message: 'User not found' });
+        return res.status(404).json({ success: false, message: 'User not found with this public key' });
       }
       friendId = user.id;
     }
 
-    // If neither userId nor pubkey, but name and email provided, create invitation
+    // If phone provided, find user by phone
+    if (phone && !friendId) {
+      const user = await db.get('SELECT id FROM users WHERE phone = ?', [phone]);
+      if (!user) {
+        return res.status(404).json({ success: false, message: 'User not found with this phone number' });
+      }
+      friendId = user.id;
+    }
+
+    // If neither userId, pubkey, nor phone, but name and email provided, create invitation
     if (!friendId && name && email) {
       return res.status(400).json({
         success: false,
@@ -53,7 +62,7 @@ router.post('/', authMiddleware, async (req, res) => {
     }
 
     if (!friendId) {
-      return res.status(400).json({ success: false, message: 'User ID or pubkey required' });
+      return res.status(400).json({ success: false, message: 'User ID, pubkey, or phone number required' });
     }
 
     // Check if trying to add self

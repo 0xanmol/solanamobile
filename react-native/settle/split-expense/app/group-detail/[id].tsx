@@ -7,6 +7,7 @@ import { ScrollView, StyleSheet, Text, TouchableOpacity, View, ActivityIndicator
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getGroup, Group } from '@/apis/groups';
 import { getExpenses, Expense } from '@/apis/expenses';
+import { getBalances, Balance } from '@/apis/balances';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function GroupDetailScreen() {
@@ -17,14 +18,18 @@ export default function GroupDetailScreen() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState(null);
+  const [balances, setBalances] = useState<Balance[]>([]);
+  const [userBalance, setUserBalance] = useState<number>(0);
 
   const fetchData = useCallback(async () => {
     if (!id) return;
     setLoading(true);
     try {
       const userJson = await AsyncStorage.getItem('user_data');
+      let user = null;
       if (userJson) {
-        setCurrentUser(JSON.parse(userJson));
+        user = JSON.parse(userJson);
+        setCurrentUser(user);
       }
 
       const groupResponse = await getGroup(id as string);
@@ -39,6 +44,25 @@ export default function GroupDetailScreen() {
         setExpenses(expensesResponse.data);
       } else {
         console.error("Failed to fetch expenses or data is not in expected format:", expensesResponse);
+      }
+
+      // Fetch balances for this group
+      const balancesResponse = await getBalances(id as string);
+      if (balancesResponse && balancesResponse.success && Array.isArray(balancesResponse.data)) {
+        setBalances(balancesResponse.data);
+
+        // Calculate user's balance in this group
+        // Note: Backend returns balances where userId is the OTHER person
+        // type 'owes' = current user owes, 'gets_back' = current user is owed
+        let balance = 0;
+        balancesResponse.data.forEach((b: Balance) => {
+          if (b.type === 'owes') {
+            balance -= b.amount;
+          } else if (b.type === 'gets_back') {
+            balance += b.amount;
+          }
+        });
+        setUserBalance(balance);
       }
     } catch (error) {
       console.error("Error fetching group details:", error);
@@ -136,7 +160,13 @@ export default function GroupDetailScreen() {
           <View style={styles.groupInfo}>
             <View style={styles.iconContainer}><View style={[styles.iconBackground, { backgroundColor: group.color || '#781D27' }]}><MaterialIcons name={group.type === 'home' ? 'home' : group.type === 'trip' ? 'flight' : group.type === 'couple' ? 'favorite' : 'list'} size={40} color="#FFFFFF" /></View></View>
             <Text style={styles.groupName}>{group.name}</Text>
-            <Text style={styles.subText}>🎉 You are all settled up in this group.</Text>
+            <Text style={styles.subText}>
+              {userBalance === 0
+                ? '🎉 You are all settled up in this group.'
+                : userBalance < 0
+                ? `You owe ${Math.abs(userBalance).toFixed(2)} in this group`
+                : `You are owed ${userBalance.toFixed(2)} in this group`}
+            </Text>
           </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.navButtonsScrollView} contentContainerStyle={styles.navButtonsContainer}>
               <TouchableOpacity style={[styles.navButton, activeTab === 'settle-up' && styles.activeNavButton]} onPress={() => setActiveTab('settle-up')}><Text style={[styles.navButtonText, activeTab === 'settle-up' && styles.activeNavButtonText]}>Settle up</Text></TouchableOpacity>
