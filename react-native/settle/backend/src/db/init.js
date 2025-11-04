@@ -34,5 +34,29 @@ db.exec(schema, (err) => {
     process.exit(1);
   }
   console.log('Database schema created successfully');
-  db.close();
+
+  // Run migrations
+  db.all("PRAGMA table_info(settlements)", (err, tableInfo) => {
+    if (err) {
+      console.error('Migration error:', err);
+      db.close();
+      return;
+    }
+
+    const hasColumn = tableInfo.some(col => col.name === 'transaction_signature');
+
+    if (!hasColumn) {
+      db.run('ALTER TABLE settlements ADD COLUMN transaction_signature TEXT', (err) => {
+        if (err) {
+          console.error('Error adding column:', err);
+        } else {
+          console.log('✅ Migration: Added transaction_signature column to settlements table');
+        }
+        db.close();
+      });
+    } else {
+      console.log('ℹ️ Migration: transaction_signature column already exists');
+      db.close();
+    }
+  });
 });

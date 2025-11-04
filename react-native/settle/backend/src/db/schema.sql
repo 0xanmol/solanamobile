@@ -89,6 +89,7 @@ CREATE TABLE IF NOT EXISTS settlements (
   group_id TEXT,
   date DATE NOT NULL,
   notes TEXT,
+  transaction_signature TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (from_user_id) REFERENCES users(id) ON DELETE CASCADE,
   FOREIGN KEY (to_user_id) REFERENCES users(id) ON DELETE CASCADE,

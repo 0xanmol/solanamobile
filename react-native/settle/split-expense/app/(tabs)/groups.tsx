@@ -148,11 +148,28 @@ export default function GroupsScreen() {
     }, [])
   );
 
+  // Filter groups based on selected filter
+  const displayedGroups = groups.filter(group => {
+    if (selectedFilter === 'all') {
+      return true;
+    } else if (selectedFilter === 'outstanding') {
+      // Show groups with outstanding balances (not settled up)
+      return group.status !== 'settled up';
+    } else if (selectedFilter === 'owe') {
+      // Show groups where user owes money
+      return group.status.includes('you owe');
+    } else if (selectedFilter === 'owed') {
+      // Show groups where user is owed money
+      return group.status.includes('you are owed');
+    }
+    return true;
+  });
+
   // Filter search results
   const filteredGroups = allGroups.filter(group =>
     group.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
-  
+
   const filteredUsers = allUsers.filter(user =>
     user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     user.email.toLowerCase().includes(searchQuery.toLowerCase())
@@ -227,7 +244,15 @@ export default function GroupsScreen() {
           </View>
 
           <View style={styles.groupsList}>
-            {groups.map(renderGroupCard)}
+            {displayedGroups.length > 0 ? (
+              displayedGroups.map(renderGroupCard)
+            ) : (
+              <View style={{ alignItems: 'center', paddingVertical: 40 }}>
+                <MaterialIcons name="filter-list-off" size={48} color={colors.icon} />
+                <Text style={[styles.emptySearchText, { color: colors.text, marginTop: 16 }]}>No groups found</Text>
+                <Text style={[styles.emptySearchSubtext, { color: colors.icon }]}>Try a different filter</Text>
+              </View>
+            )}
           </View>
 
           <TouchableOpacity 

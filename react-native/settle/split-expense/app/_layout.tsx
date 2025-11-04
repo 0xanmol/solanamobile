@@ -34,6 +34,7 @@ function RootLayoutInner() {
         <Stack.Screen name="group-settings" options={{ headerShown: false }} />
         <Stack.Screen name="invite-link" options={{ headerShown: false }} />
         <Stack.Screen name="balances" options={{ headerShown: false }} />
+        <Stack.Screen name="activity-detail/[id]" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
       </Stack>
       <StatusBar style="auto" />

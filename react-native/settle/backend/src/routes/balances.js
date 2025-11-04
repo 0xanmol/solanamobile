@@ -136,7 +136,7 @@ router.get('/', authMiddleware, async (req, res) => {
 // Create settlement/payment
 router.post('/settle', authMiddleware, async (req, res) => {
   try {
-    const { fromUserId, toUserId, amount, groupId, date, notes } = req.body;
+    const { fromUserId, toUserId, amount, groupId, date, notes, transactionSignature } = req.body;
 
     if (!fromUserId || !toUserId || !amount) {
       return res.status(400).json({
@@ -156,9 +156,9 @@ router.post('/settle', authMiddleware, async (req, res) => {
     const settlementDate = formatDate(date) || formatDate(new Date());
 
     await db.run(
-      `INSERT INTO settlements (id, from_user_id, to_user_id, amount, group_id, date, notes)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [settlementId, fromUserId, toUserId, amount, groupId || null, settlementDate, notes || null]
+      `INSERT INTO settlements (id, from_user_id, to_user_id, amount, group_id, date, notes, transaction_signature)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [settlementId, fromUserId, toUserId, amount, groupId || null, settlementDate, notes || null, transactionSignature || null]
     );
 
     // Create activity

@@ -71,6 +71,10 @@ router.get('/', authMiddleware, async (req, res) => {
         );
         if (settlement) {
           activity.settlement = settlement;
+          // Add transaction signature to the activity root for easier access
+          if (settlement.transaction_signature) {
+            activity.transaction_signature = settlement.transaction_signature;
+          }
         }
       }
     }

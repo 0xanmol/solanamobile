@@ -41,6 +41,7 @@ interface FormattedActivity {
   titleLine1: string;
   titleLine2?: string;
   meta: string;
+  rawActivity: Activity;
 }
 
 export default function ActivityScreen() {
@@ -166,14 +167,22 @@ export default function ActivityScreen() {
         titleLine1,
         titleLine2,
         meta: formatTimeAgo(activity.created_at),
+        rawActivity: activity,
       };
     });
   }, [activities, currentUser]);
 
   const renderActivityItem = (activity: FormattedActivity) => (
-    <View
+    <TouchableOpacity
       key={activity.id}
       style={styles.row}
+      onPress={() => router.push({
+        pathname: '/activity-detail/[id]',
+        params: {
+          id: activity.id,
+          activityData: JSON.stringify(activity.rawActivity)
+        }
+      })}
     >
       <View style={[styles.tile, { backgroundColor: activity.tileColor }]}>
         {activity.icon}
@@ -191,7 +200,7 @@ export default function ActivityScreen() {
         ) : null}
         <Text style={[styles.rowMeta, { color: colors.icon }]}>{activity.meta}</Text>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   const filteredActivities = useMemo(() => {

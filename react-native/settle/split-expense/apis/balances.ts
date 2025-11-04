@@ -71,6 +71,7 @@ export const settleUp = async (data: {
   groupId?: string;
   date?: string;
   notes?: string;
+  transactionSignature?: string;
 }): Promise<{ success: boolean; settlement: Settlement }> => {
   try {
     // Backend expects fromUserId and toUserId, not from and to
@@ -81,6 +82,7 @@ export const settleUp = async (data: {
       groupId: data.groupId,
       date: data.date,
       notes: data.notes,
+      transactionSignature: data.transactionSignature,
     };
     const response = await apiClient.post('/balances/settle', requestData);
     return response.data;

@@ -100,8 +100,7 @@ export default function BalancesScreen() {
         to: creditorId,
         amount,
         groupId: groupId as string | undefined,
-        // TODO: Update backend to accept transaction signature
-        // transactionSignature: txResult.signature
+        transactionSignature: txResult.signature
       };
       console.log('Sending settlement to backend:', settlementData);
 
