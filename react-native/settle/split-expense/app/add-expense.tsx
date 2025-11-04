@@ -8,6 +8,8 @@ import { getGroups, getGroup, Group, GroupMember } from '@/apis/groups';
 import { getFriends, Friend } from '@/apis/friends';
 import { createExpense, CreateExpenseData } from '@/apis/expenses';
 import { Checkbox } from '@/components/common/Checkbox';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Colors } from '@/constants/theme';
 
 interface SelectedItem {
   id: string;
@@ -20,6 +22,8 @@ interface SelectedItem {
 export default function AddExpenseScreen() {
   const router = useRouter();
   const { groupId } = useLocalSearchParams();
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme ?? 'light'];
 
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('0.00');
@@ -179,26 +183,26 @@ export default function AddExpenseScreen() {
     if (newItems.length === 0) setSelectedType(null);
   };
   const renderSelectedItem = (item: SelectedItem) => (
-    <View key={item.id} style={styles.selectedItem}>
+    <View key={item.id} style={[styles.selectedItem, { backgroundColor: colors.cardBackground }]}>
       <View style={[styles.selectedItemIcon, { backgroundColor: item.color || '#4B5563' }]}>
         <MaterialIcons name={item.type === 'group' ? 'group' : 'person'} size={16} color="#FFFFFF" />
       </View>
-      <Text style={styles.selectedItemText}>{item.name}</Text>
+      <Text style={[styles.selectedItemText, { color: colors.text }]}>{item.name}</Text>
       <TouchableOpacity onPress={() => handleRemoveItem(item.id)} style={styles.removeButton}>
-        <MaterialIcons name="close" size={16} color="#6B7280" />
+        <MaterialIcons name="close" size={16} color={colors.icon} />
       </TouchableOpacity>
     </View>
   );
   // --- End Global Expense Functions ---
 
   const renderHeader = () => (
-    <View style={styles.header}>
+    <View style={[styles.header, { borderBottomColor: colors.border }]}>
       <TouchableOpacity onPress={() => router.back()} style={styles.iconButton}>
-        <MaterialIcons name="arrow-back" size={24} color="#1F2937" />
+        <MaterialIcons name="arrow-back" size={24} color={colors.text} />
       </TouchableOpacity>
-      <Text style={styles.headerTitle}>Add expense</Text>
+      <Text style={[styles.headerTitle, { color: colors.text }]}>Add expense</Text>
       <TouchableOpacity onPress={handleSave} style={styles.iconButton}>
-        <MaterialIcons name="check" size={24} color="#1F2937" />
+        <MaterialIcons name="check" size={24} color={colors.text} />
       </TouchableOpacity>
     </View>
   );
@@ -206,26 +210,26 @@ export default function AddExpenseScreen() {
   const renderCommonFields = () => (
     <>
       <View style={styles.fieldRow}>
-        <View style={[styles.fieldIconBox, styles.tileCard]}><MaterialIcons name="receipt" size={24} color="#1F2937" /></View>
+        <View style={[styles.fieldIconBox, styles.tileCard, { backgroundColor: colors.background, borderColor: colors.border }]}><MaterialIcons name="receipt" size={24} color={colors.text} /></View>
         <View style={styles.fieldContent}>
-          <TextInput style={styles.textInput} value={description} onChangeText={setDescription} placeholder="Enter a description" placeholderTextColor="#9CA3AF" />
+          <TextInput style={[styles.textInput, { color: colors.text, borderBottomColor: colors.icon }]} value={description} onChangeText={setDescription} placeholder="Enter a description" placeholderTextColor={colors.icon} />
         </View>
       </View>
       <View style={styles.fieldRow}>
-        <View style={[styles.fieldIconBox, styles.tileCard]}><Text style={styles.currency}>$</Text></View>
+        <View style={[styles.fieldIconBox, styles.tileCard, { backgroundColor: colors.background, borderColor: colors.border }]}><Text style={[styles.currency, { color: colors.text }]}>$</Text></View>
         <View style={styles.fieldContent}>
-          <TextInput style={[styles.textInput, styles.amountInput]} value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder="0.00" placeholderTextColor="#9CA3AF" />
+          <TextInput style={[styles.textInput, styles.amountInput, { color: colors.text, borderBottomColor: colors.icon }]} value={amount} onChangeText={setAmount} keyboardType="decimal-pad" placeholder="0.00" placeholderTextColor={colors.icon} />
         </View>
       </View>
     </>
   );
 
   if (loading) {
-    return <View style={styles.loadingContainer}><ActivityIndicator size="large" /></View>;
+    return <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}><ActivityIndicator size="large" color={colors.tint} /></View>;
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       {renderHeader()}
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
@@ -233,23 +237,23 @@ export default function AddExpenseScreen() {
             // --- Group Context UI ---
             <>
               <View style={styles.groupContextHeader}>
-                <Text style={styles.withLabel}>Expense in <Text style={styles.withBold}>{group.name}</Text></Text>
+                <Text style={[styles.withLabel, { color: colors.text }]}>Expense in <Text style={styles.withBold}>{group.name}</Text></Text>
               </View>
               {renderCommonFields()}
 
               {/* Who Paid Selector */}
               <View style={styles.paidByContainer}>
-                <Text style={styles.paidByHeader}>Paid by</Text>
+                <Text style={[styles.paidByHeader, { color: colors.text }]}>Paid by</Text>
                 {group.members?.map(member => (
                   <TouchableOpacity
                     key={member.id}
                     style={styles.paidByItem}
                     onPress={() => setPaidBy(member.id)}
                   >
-                    <View style={[styles.radioButton, paidBy === member.id && styles.radioButtonSelected]}>
-                      {paidBy === member.id && <View style={styles.radioButtonInner} />}
+                    <View style={[styles.radioButton, { borderColor: paidBy === member.id ? colors.tint : colors.border }]}>
+                      {paidBy === member.id && <View style={[styles.radioButtonInner, { backgroundColor: colors.tint }]} />}
                     </View>
-                    <Text style={styles.paidByName}>
+                    <Text style={[styles.paidByName, { color: colors.text }]}>
                       {member.id === currentUser?.id ? 'You' : member.name}
                     </Text>
                   </TouchableOpacity>
@@ -257,7 +261,7 @@ export default function AddExpenseScreen() {
               </View>
 
               <View style={styles.participantsContainer}>
-                <Text style={styles.participantsHeader}>Split between</Text>
+                <Text style={[styles.participantsHeader, { color: colors.text }]}>Split between</Text>
                 {group.members?.map(member => (
                   <View key={member.id} style={styles.participantItem}>
                     <Checkbox
@@ -268,7 +272,7 @@ export default function AddExpenseScreen() {
                       style={styles.participantNameContainer}
                       onPress={() => handleToggleMember(member.id)}
                     >
-                      <Text style={styles.participantName}>{member.name}</Text>
+                      <Text style={[styles.participantName, { color: colors.text }]}>{member.name}</Text>
                     </TouchableOpacity>
                   </View>
                 ))}
@@ -277,14 +281,14 @@ export default function AddExpenseScreen() {
           ) : (
             // --- Global Context UI ---
             <>
-              <View style={styles.withRow}>
-                <Text style={styles.withLabel}>With <Text style={styles.withBold}>you</Text> and:</Text>
+              <View style={[styles.withRow, { borderColor: colors.border }]}>
+                <Text style={[styles.withLabel, { color: colors.text }]}>With <Text style={styles.withBold}>you</Text> and:</Text>
                 <View style={styles.withInputContainer}>
                   {selectedItems.length > 0 && <View style={styles.selectedItemsContainer}>{selectedItems.map(renderSelectedItem)}</View>}
                   <TextInput
-                    style={[styles.withInput, selectedItems.length > 0 && styles.withInputWithSelection]}
+                    style={[styles.withInput, { color: colors.text }, selectedItems.length > 0 && styles.withInputWithSelection]}
                     placeholder={selectedItems.length === 0 ? "Enter names or groups" : ""}
-                    placeholderTextColor="#9CA3AF"
+                    placeholderTextColor={colors.icon}
                     value={withInput}
                     onChangeText={handleInputChange}
                     onFocus={() => setShowDropdown(withInput.length > 0)}
@@ -293,21 +297,21 @@ export default function AddExpenseScreen() {
                 </View>
               </View>
               {showDropdown && (
-                <View style={styles.dropdown}>
-                  {filteredGroups.length > 0 && <View style={styles.dropdownSection}><Text style={styles.dropdownSectionTitle}>Groups</Text>{filteredGroups.map(g => (<TouchableOpacity key={g.id} style={styles.dropdownItem} onPress={() => handleSelectItem({ ...g, type: 'group' })}><View style={[styles.dropdownItemIcon, { backgroundColor: g.color || '#4B5563' }]}><MaterialIcons name="group" size={20} color="#FFFFFF" /></View><Text style={styles.dropdownItemText}>{g.name}</Text></TouchableOpacity>))}</View>}
-                  {filteredFriends.length > 0 && <View style={styles.dropdownSection}><Text style={styles.dropdownSectionTitle}>Friends</Text>{filteredFriends.map(f => (<TouchableOpacity key={f.id} style={styles.dropdownItem} onPress={() => handleSelectItem({ ...f, type: 'friend' })}><View style={[styles.dropdownItemIcon, { backgroundColor: f.color || '#3B82F6' }]}><MaterialIcons name="person" size={20} color="#FFFFFF" /></View><Text style={styles.dropdownItemText}>{f.name}</Text></TouchableOpacity>))}</View>}
+                <View style={[styles.dropdown, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
+                  {filteredGroups.length > 0 && <View style={[styles.dropdownSection, { borderBottomColor: colors.border }]}><Text style={[styles.dropdownSectionTitle, { color: colors.icon, backgroundColor: colors.background }]}>Groups</Text>{filteredGroups.map(g => (<TouchableOpacity key={g.id} style={styles.dropdownItem} onPress={() => handleSelectItem({ ...g, type: 'group' })}><View style={[styles.dropdownItemIcon, { backgroundColor: g.color || '#4B5563' }]}><MaterialIcons name="group" size={20} color="#FFFFFF" /></View><Text style={[styles.dropdownItemText, { color: colors.text }]}>{g.name}</Text></TouchableOpacity>))}</View>}
+                  {filteredFriends.length > 0 && <View style={[styles.dropdownSection, { borderBottomColor: colors.border }]}><Text style={[styles.dropdownSectionTitle, { color: colors.icon, backgroundColor: colors.background }]}>Friends</Text>{filteredFriends.map(f => (<TouchableOpacity key={f.id} style={styles.dropdownItem} onPress={() => handleSelectItem({ ...f, type: 'friend' })}><View style={[styles.dropdownItemIcon, { backgroundColor: f.color || '#3B82F6' }]}><MaterialIcons name="person" size={20} color="#FFFFFF" /></View><Text style={[styles.dropdownItemText, { color: colors.text }]}>{f.name}</Text></TouchableOpacity>))}</View>}
                 </View>
               )}
               {renderCommonFields()}
 
               {/* Paid by You - Non-group context */}
               <View style={styles.paidByContainer}>
-                <Text style={styles.paidByHeader}>Paid by</Text>
+                <Text style={[styles.paidByHeader, { color: colors.text }]}>Paid by</Text>
                 <View style={styles.paidByItem}>
-                  <View style={[styles.radioButton, styles.radioButtonSelected]}>
-                    <View style={styles.radioButtonInner} />
+                  <View style={[styles.radioButton, styles.radioButtonSelected, { borderColor: colors.tint }]}>
+                    <View style={[styles.radioButtonInner, { backgroundColor: colors.tint }]} />
                   </View>
-                  <Text style={styles.paidByName}>You</Text>
+                  <Text style={[styles.paidByName, { color: colors.text }]}>You</Text>
                 </View>
               </View>
             </>
@@ -319,47 +323,47 @@ export default function AddExpenseScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1 },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
-  headerTitle: { fontSize: 24, color: '#1F2937', fontFamily: 'Montserrat_600SemiBold' },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1 },
+  headerTitle: { fontSize: 24, fontFamily: 'Montserrat_600SemiBold' },
   iconButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   content: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 120 },
-  withRow: { paddingVertical: 16, borderWidth: 1, borderColor: '#E5E7EB', borderRadius: 12, paddingHorizontal: 16, marginBottom: 20 },
-  withLabel: { fontSize: 18, color: '#1F2937', marginRight: 8, marginBottom: 8 },
+  withRow: { paddingVertical: 16, borderWidth: 1, borderRadius: 12, paddingHorizontal: 16, marginBottom: 20 },
+  withLabel: { fontSize: 18, marginRight: 8, marginBottom: 8 },
   withBold: { fontFamily: 'Poppins_600SemiBold' },
   withInputContainer: { flex: 1 },
-  withInput: { fontSize: 16, color: '#1F2937', minHeight: 24 },
+  withInput: { fontSize: 16, minHeight: 24 },
   withInputWithSelection: { minHeight: 40 },
   selectedItemsContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
-  selectedItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F3F4F6', borderRadius: 16, paddingHorizontal: 8, paddingVertical: 4, gap: 6 },
+  selectedItem: { flexDirection: 'row', alignItems: 'center', borderRadius: 16, paddingHorizontal: 8, paddingVertical: 4, gap: 6 },
   selectedItemIcon: { width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  selectedItemText: { fontSize: 14, color: '#1F2937', fontFamily: 'Poppins_500Medium' },
+  selectedItemText: { fontSize: 14, fontFamily: 'Poppins_500Medium' },
   removeButton: { width: 16, height: 16, alignItems: 'center', justifyContent: 'center' },
-  dropdown: { backgroundColor: '#FFFFFF', borderRadius: 12, borderWidth: 1, borderColor: '#E5E7EB', shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 5, marginBottom: 20, maxHeight: 300 },
-  dropdownSection: { borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
-  dropdownSectionTitle: { fontSize: 14, color: '#6B7280', paddingHorizontal: 16, paddingVertical: 8, backgroundColor: '#F9FAFB', fontFamily: 'Montserrat_600SemiBold' },
+  dropdown: { borderRadius: 12, borderWidth: 1, shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 5, marginBottom: 20, maxHeight: 300 },
+  dropdownSection: { borderBottomWidth: 1 },
+  dropdownSectionTitle: { fontSize: 14, paddingHorizontal: 16, paddingVertical: 8, fontFamily: 'Montserrat_600SemiBold' },
   dropdownItem: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, gap: 12 },
   dropdownItemIcon: { width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  dropdownItemText: { flex: 1, fontSize: 16, color: '#1F2937', fontFamily: 'Poppins_500Medium' },
+  dropdownItemText: { flex: 1, fontSize: 16, fontFamily: 'Poppins_500Medium' },
   fieldRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
-  fieldIconBox: { width: 56, height: 56, borderRadius: 12, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', marginRight: 16 },
-  tileCard: { borderWidth: 1, borderColor: '#E5E7EB', shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
+  fieldIconBox: { width: 56, height: 56, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 16 },
+  tileCard: { borderWidth: 1, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 2 },
   fieldContent: { flex: 1 },
-  textInput: { fontSize: 20, color: '#1F2937', borderBottomWidth: 1, borderBottomColor: '#9CA3AF', paddingBottom: 8 },
+  textInput: { fontSize: 20, borderBottomWidth: 1, paddingBottom: 8 },
   amountInput: { fontSize: 40, fontFamily: 'Poppins_600SemiBold' },
-  currency: { fontSize: 24, color: '#1F2937', fontFamily: 'Poppins_600SemiBold' },
+  currency: { fontSize: 24, fontFamily: 'Poppins_600SemiBold' },
   groupContextHeader: { marginBottom: 20 },
   paidByContainer: { marginTop: 20, marginBottom: 20 },
-  paidByHeader: { fontSize: 16, fontFamily: 'Poppins_600SemiBold', color: '#1F2937', marginBottom: 12 },
+  paidByHeader: { fontSize: 16, fontFamily: 'Poppins_600SemiBold', marginBottom: 12 },
   paidByItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, gap: 12 },
-  paidByName: { fontSize: 16, color: '#1F2937', fontFamily: 'Poppins_500Medium' },
-  radioButton: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: '#D1D5DB', alignItems: 'center', justifyContent: 'center' },
-  radioButtonSelected: { borderColor: '#7C3AED' },
-  radioButtonInner: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#7C3AED' },
+  paidByName: { fontSize: 16, fontFamily: 'Poppins_500Medium' },
+  radioButton: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  radioButtonSelected: {},
+  radioButtonInner: { width: 10, height: 10, borderRadius: 5 },
   participantsContainer: { marginTop: 20 },
-  participantsHeader: { fontSize: 16, fontFamily: 'Poppins_600SemiBold', color: '#1F2937', marginBottom: 8 },
+  participantsHeader: { fontSize: 16, fontFamily: 'Poppins_600SemiBold', marginBottom: 8 },
   participantItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, gap: 12 },
   participantNameContainer: { flex: 1 },
-  participantName: { fontSize: 16, color: '#1F2937' },
+  participantName: { fontSize: 16 },
 });

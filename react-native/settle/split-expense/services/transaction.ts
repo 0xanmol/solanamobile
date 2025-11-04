@@ -8,7 +8,8 @@ import {
   LAMPORTS_PER_SOL,
 } from '@solana/web3.js';
 import { APP_IDENTITY, SOLANA_CLUSTER } from '@/constants/wallet';
-import { getStoredWalletAuth } from '@/apis/auth';
+import { getStoredWalletAuth, saveWalletAuth } from '@/apis/auth';
+import { reauthorizeWallet } from './wallet';
 
 // Solana RPC endpoint (devnet)
 const SOLANA_RPC_ENDPOINT = 'https://api.devnet.solana.com';
@@ -78,58 +79,59 @@ export const sendSol = async (
   toAddress: string,
   amountInUsd: number
 ): Promise<SendSolResult> => {
+  let cachedAuth = await getStoredWalletAuth();
+  if (!cachedAuth) {
+    throw new Error('No wallet connected. Please connect your wallet first.');
+  }
+
+  if (!isValidSolanaAddress(cachedAuth.address)) {
+    throw new Error('Your wallet address is invalid. Please reconnect your wallet.');
+  }
+
+  if (!isValidSolanaAddress(toAddress)) {
+    throw new Error(
+      'Invalid recipient wallet address. The address must be a valid Solana public key (base58 encoded, 32-44 characters).'
+    );
+  }
+
+  const solPriceInUsd = await getSolToUsdRate();
+  if (!solPriceInUsd) {
+    throw new Error('Could not determine SOL to USD conversion rate.');
+  }
+
+  const amountInSol = convertUsdToSol(amountInUsd, solPriceInUsd);
+
+  const connection = new Connection(SOLANA_RPC_ENDPOINT, 'confirmed');
+
+  const fromPubkey = new PublicKey(cachedAuth.address);
+  const toPubkey = new PublicKey(toAddress);
+
+  const lamports = Math.floor(amountInSol * LAMPORTS_PER_SOL);
+
+  console.log('Creating SOL transfer transaction:', {
+    from: fromPubkey.toBase58(),
+    to: toPubkey.toBase58(),
+    amountInUsd,
+    amountInSol,
+    lamports,
+  });
+
+  const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+
+  const transferInstruction = SystemProgram.transfer({
+    fromPubkey,
+    toPubkey,
+    lamports,
+  });
+
+  const transaction = new Transaction({
+    feePayer: fromPubkey,
+    blockhash,
+    lastValidBlockHeight,
+  }).add(transferInstruction);
+
   try {
-    const cachedAuth = await getStoredWalletAuth();
-    if (!cachedAuth) {
-      throw new Error('No wallet connected. Please connect your wallet first.');
-    }
-
-    if (!isValidSolanaAddress(cachedAuth.address)) {
-      throw new Error('Your wallet address is invalid. Please reconnect your wallet.');
-    }
-
-    if (!isValidSolanaAddress(toAddress)) {
-      throw new Error(
-        'Invalid recipient wallet address. The address must be a valid Solana public key (base58 encoded, 32-44 characters).'
-      );
-    }
-
-    const solPriceInUsd = await getSolToUsdRate();
-    if (!solPriceInUsd) {
-        throw new Error('Could not determine SOL to USD conversion rate.');
-    }
-
-    const amountInSol = convertUsdToSol(amountInUsd, solPriceInUsd);
-
-    const connection = new Connection(SOLANA_RPC_ENDPOINT, 'confirmed');
-
-    const fromPubkey = new PublicKey(cachedAuth.address);
-    const toPubkey = new PublicKey(toAddress);
-
-    const lamports = Math.floor(amountInSol * LAMPORTS_PER_SOL);
-
-    console.log('Creating SOL transfer transaction:', {
-      from: fromPubkey.toBase58(),
-      to: toPubkey.toBase58(),
-      amountInUsd,
-      amountInSol,
-      lamports,
-    });
-
-    const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
-
-    const transferInstruction = SystemProgram.transfer({
-      fromPubkey,
-      toPubkey,
-      lamports,
-    });
-
-    const transaction = new Transaction({
-      feePayer: fromPubkey,
-      blockhash,
-      lastValidBlockHeight,
-    }).add(transferInstruction);
-
+    // Attempt transaction with cached auth
     const signature = await transact(async (wallet: Web3MobileWallet) => {
       await wallet.authorize({
         cluster: SOLANA_CLUSTER,
@@ -163,9 +165,72 @@ export const sendSol = async (
     };
   } catch (error: any) {
     console.error('Send SOL error:', error);
+    const errorMessage = error.message || '';
+
+    // Check if error is due to expired/invalid auth token
+    if (errorMessage.includes('expired') ||
+        errorMessage.includes('invalid') ||
+        errorMessage.includes('auth') ||
+        errorMessage.includes('token')) {
+      console.log('Auth token expired, attempting to reauthorize...');
+
+      try {
+        // Reauthorize wallet to get fresh token
+        const freshAuth = await reauthorizeWallet(cachedAuth.authToken);
+
+        // Save the fresh auth
+        await saveWalletAuth({
+          address: freshAuth.pubkey,
+          authToken: freshAuth.authToken,
+        });
+
+        console.log('Wallet reauthorized, retrying transaction...');
+
+        // Retry transaction with fresh auth
+        const signature = await transact(async (wallet: Web3MobileWallet) => {
+          await wallet.authorize({
+            cluster: SOLANA_CLUSTER,
+            identity: APP_IDENTITY,
+            auth_token: freshAuth.authToken,
+          });
+
+          const signedTransactions = await wallet.signAndSendTransactions({
+            transactions: [transaction],
+          });
+
+          return signedTransactions[0];
+        });
+
+        console.log('Transaction sent successfully after reauth:', signature);
+
+        const confirmation = await connection.confirmTransaction({
+          signature,
+          blockhash,
+          lastValidBlockHeight,
+        });
+
+        if (confirmation.value.err) {
+          throw new Error('Transaction failed: ' + JSON.stringify(confirmation.value.err));
+        }
+
+        return {
+          success: true,
+          signature,
+          message: 'Payment sent successfully',
+        };
+      } catch (reAuthError: any) {
+        console.error('Reauthorization and retry failed:', reAuthError);
+        return {
+          success: false,
+          message: reAuthError.message || 'Failed to send payment after reauthorization',
+        };
+      }
+    }
+
+    // If not an auth error, return the original error
     return {
       success: false,
-      message: error.message || 'Failed to send payment',
+      message: errorMessage || 'Failed to send payment',
     };
   }
 };

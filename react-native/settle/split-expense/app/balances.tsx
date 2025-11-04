@@ -1,6 +1,6 @@
 import TabLayoutWrapper from '@/components/TabLayoutWrapper';
-import { Colors } from '@/constants/colors';
-import { styles } from '@/styles/balances.styles'; // Assuming this file will be updated/used
+import { Colors } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useState, useCallback, useMemo } from 'react';
@@ -13,6 +13,8 @@ import { sendSol } from '@/services/transaction';
 export default function BalancesScreen() {
   const router = useRouter();
   const { groupId } = useLocalSearchParams();
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme ?? 'light'];
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [balances, setBalances] = useState<Balance[]>([]);
   const [loading, setLoading] = useState(true);
@@ -128,18 +130,18 @@ export default function BalancesScreen() {
   };
 
   const renderSummary = () => (
-    <View style={newStyles.summaryContainer}>
+    <View style={[newStyles.summaryContainer, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
       <View style={newStyles.summaryBox}>
-        <Text style={newStyles.summaryLabel}>You owe</Text>
-        <Text style={[newStyles.summaryAmount, newStyles.red]}>${totalYouOwe.toFixed(2)}</Text>
+        <Text style={[newStyles.summaryLabel, { color: colors.icon }]}>You owe</Text>
+        <Text style={[newStyles.summaryAmount, { color: colors.error }]}>${totalYouOwe.toFixed(2)}</Text>
       </View>
       <View style={newStyles.summaryBox}>
-        <Text style={newStyles.summaryLabel}>You are owed</Text>
-        <Text style={[newStyles.summaryAmount, newStyles.green]}>${totalOwedToYou.toFixed(2)}</Text>
+        <Text style={[newStyles.summaryLabel, { color: colors.icon }]}>You are owed</Text>
+        <Text style={[newStyles.summaryAmount, { color: colors.success }]}>${totalOwedToYou.toFixed(2)}</Text>
       </View>
       <View style={newStyles.summaryBox}>
-        <Text style={newStyles.summaryLabel}>Net balance</Text>
-        <Text style={[newStyles.summaryAmount, netBalance < 0 ? newStyles.red : newStyles.green]}>
+        <Text style={[newStyles.summaryLabel, { color: colors.icon }]}>Net balance</Text>
+        <Text style={[newStyles.summaryAmount, { color: netBalance < 0 ? colors.error : colors.success }]}>
           {netBalance < 0 ? '-' : ''}${Math.abs(netBalance).toFixed(2)}
         </Text>
       </View>
@@ -153,22 +155,22 @@ export default function BalancesScreen() {
     const isSettling = settlingId === balance.id;
 
     return (
-      <View key={balance.id} style={newStyles.balanceRow}>
+      <View key={balance.id} style={[newStyles.balanceRow, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
         <View style={newStyles.balanceInfo}>
           {isOwedToYou ? (
-            <Text style={newStyles.balanceText}>
-              <Text style={newStyles.bold}>{balance.userName}</Text> owes you <Text style={[newStyles.bold, newStyles.green]}>{balance.amount.toFixed(2)} USD</Text>
+            <Text style={[newStyles.balanceText, { color: colors.text }]}>
+              <Text style={newStyles.bold}>{balance.userName}</Text> owes you <Text style={[newStyles.bold, { color: colors.success }]}>{balance.amount.toFixed(2)} USD</Text>
             </Text>
           ) : (
-            <Text style={newStyles.balanceText}>
-              You owe <Text style={newStyles.bold}>{balance.userName}</Text> <Text style={[newStyles.bold, newStyles.red]}>{balance.amount.toFixed(2)} USD</Text>
+            <Text style={[newStyles.balanceText, { color: colors.text }]}>
+              You owe <Text style={newStyles.bold}>{balance.userName}</Text> <Text style={[newStyles.bold, { color: colors.error }]}>{balance.amount.toFixed(2)} USD</Text>
             </Text>
           )}
         </View>
         {/* Only show settle button when YOU owe someone */}
         {!isOwedToYou && (
           <TouchableOpacity
-            style={[newStyles.settleButton, isSettling && newStyles.settleButtonDisabled]}
+            style={[newStyles.settleButton, { backgroundColor: colors.success }, isSettling && newStyles.settleButtonDisabled]}
             onPress={() => handleSettleUp(
               currentUser.id,      // debtor (you)
               balance.userId,      // creditor (person you owe)
@@ -190,17 +192,17 @@ export default function BalancesScreen() {
   };
 
   if (loading) {
-    return <View style={newStyles.loadingContainer}><ActivityIndicator size="large" /></View>;
+    return <View style={[newStyles.loadingContainer, { backgroundColor: colors.background }]}><ActivityIndicator size="large" color={colors.tint} /></View>;
   }
 
   return (
     <TabLayoutWrapper>
-      <SafeAreaView style={newStyles.container} edges={['top']}>
-        <View style={newStyles.header}>
+      <SafeAreaView style={[newStyles.container, { backgroundColor: colors.cardBackground }]} edges={['top']}>
+        <View style={[newStyles.header, { backgroundColor: colors.background, borderBottomColor: colors.border }]}>
           <TouchableOpacity style={newStyles.backButton} onPress={() => router.back()}>
-            <MaterialIcons name="arrow-back" size={24} color={Colors.black} />
+            <MaterialIcons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
-          <Text style={newStyles.headerTitle}>Balances</Text>
+          <Text style={[newStyles.headerTitle, { color: colors.text }]}>Balances</Text>
           <View style={{ width: 40 }} />
         </View>
 
@@ -209,19 +211,19 @@ export default function BalancesScreen() {
         <ScrollView style={newStyles.content} showsVerticalScrollIndicator={false}>
           {balances.length === 0 ? (
             <View style={newStyles.emptyStateContainer}>
-              <Text style={newStyles.emptyStateText}>You are all settled up.</Text>
+              <Text style={[newStyles.emptyStateText, { color: colors.icon }]}>You are all settled up.</Text>
             </View>
           ) : (
             <>
               {youOwe.length > 0 && (
                 <View style={newStyles.section}>
-                  <Text style={newStyles.sectionHeader}>YOU OWE</Text>
+                  <Text style={[newStyles.sectionHeader, { color: colors.icon }]}>YOU OWE</Text>
                   {youOwe.map(renderBalanceRow)}
                 </View>
               )}
               {owedToYou.length > 0 && (
                 <View style={newStyles.section}>
-                  <Text style={newStyles.sectionHeader}>YOU ARE OWED</Text>
+                  <Text style={[newStyles.sectionHeader, { color: colors.icon }]}>YOU ARE OWED</Text>
                   {owedToYou.map(renderBalanceRow)}
                 </View>
               )}
@@ -234,27 +236,27 @@ export default function BalancesScreen() {
 }
 
 const newStyles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F9FAFB' },
+  container: { flex: 1 },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, backgroundColor: '#FFFFFF', borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
-  headerTitle: { fontSize: 20, fontFamily: 'Montserrat_600SemiBold', color: '#1F2937' },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1 },
+  headerTitle: { fontSize: 20, fontFamily: 'Montserrat_600SemiBold' },
   backButton: { padding: 8 },
-  summaryContainer: { flexDirection: 'row', justifyContent: 'space-around', backgroundColor: '#FFFFFF', paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
+  summaryContainer: { flexDirection: 'row', justifyContent: 'space-around', paddingVertical: 16, borderBottomWidth: 1 },
   summaryBox: { alignItems: 'center' },
-  summaryLabel: { fontSize: 14, color: '#6B7280', marginBottom: 4, fontFamily: 'Montserrat_500Medium' },
+  summaryLabel: { fontSize: 14, marginBottom: 4, fontFamily: 'Montserrat_500Medium' },
   summaryAmount: { fontSize: 20, fontFamily: 'Poppins_600SemiBold' },
-  green: { color: '#10B981' },
-  red: { color: '#EF4444' },
+  green: { },
+  red: { },
   content: { flex: 1 },
   section: { marginTop: 16 },
-  sectionHeader: { fontSize: 12, fontFamily: 'Montserrat_600SemiBold', color: '#6B7280', paddingHorizontal: 20, marginBottom: 8 },
-  balanceRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', paddingHorizontal: 20, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
+  sectionHeader: { fontSize: 12, fontFamily: 'Montserrat_600SemiBold', paddingHorizontal: 20, marginBottom: 8 },
+  balanceRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12, borderBottomWidth: 1 },
   balanceInfo: { flex: 1 },
-  balanceText: { fontSize: 16, color: '#1F2937' },
+  balanceText: { fontSize: 16 },
   bold: { fontFamily: 'Poppins_600SemiBold' },
-  settleButton: { backgroundColor: '#10B981', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
+  settleButton: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
   settleButtonDisabled: { opacity: 0.6 },
   settleButtonText: { color: '#FFFFFF', fontSize: 14, fontFamily: 'Poppins_500Medium' },
   emptyStateContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingTop: 100 },
-  emptyStateText: { fontSize: 18, color: '#6B7280' },
+  emptyStateText: { fontSize: 18 },
 });

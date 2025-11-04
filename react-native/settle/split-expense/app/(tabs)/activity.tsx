@@ -54,7 +54,10 @@ export default function ActivityScreen() {
   const [loading, setLoading] = useState(true);
 
   const formatTimeAgo = (dateString: string) => {
-    const date = new Date(dateString);
+    // SQLite stores timestamps in UTC, so we need to treat them as UTC
+    // Add 'Z' suffix if not present to ensure UTC parsing
+    const utcDateString = dateString.endsWith('Z') ? dateString : `${dateString}Z`;
+    const date = new Date(utcDateString);
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);
@@ -174,7 +177,7 @@ export default function ActivityScreen() {
     >
       <View style={[styles.tile, { backgroundColor: activity.tileColor }]}>
         {activity.icon}
-        <View style={styles.quarterCircle}>
+        <View style={[styles.quarterCircle, { borderColor: colors.background }]}>
           <Image
             source={require('../../assets/images/android-icon-foreground.png')}
             style={styles.quarterCircleImage}
@@ -182,11 +185,11 @@ export default function ActivityScreen() {
         </View>
       </View>
       <View style={styles.rowTextWrap}>
-        <Text style={styles.rowTitle}>{activity.titleLine1}</Text>
+        <Text style={[styles.rowTitle, { color: colors.text }]}>{activity.titleLine1}</Text>
         {activity.titleLine2 ? (
-          <Text style={styles.rowSubtle}>{activity.titleLine2}</Text>
+          <Text style={[styles.rowSubtle, { color: colors.text }]}>{activity.titleLine2}</Text>
         ) : null}
-        <Text style={styles.rowMeta}>{activity.meta}</Text>
+        <Text style={[styles.rowMeta, { color: colors.icon }]}>{activity.meta}</Text>
       </View>
     </View>
   );
@@ -206,12 +209,12 @@ export default function ActivityScreen() {
   if (loading) {
     return (
       <TabLayoutWrapper>
-        <SafeAreaView style={[styles.container, { backgroundColor: '#FFFFFF' }]} edges={['top']}>
+        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
           <View style={styles.header}>
-            <Text style={styles.title}>Activity</Text>
+            <Text style={[styles.title, { color: colors.text }]}>Activity</Text>
           </View>
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#781D27" />
+            <ActivityIndicator size="large" color={colors.tint} />
           </View>
         </SafeAreaView>
       </TabLayoutWrapper>
@@ -220,14 +223,14 @@ export default function ActivityScreen() {
 
   return (
     <TabLayoutWrapper>
-      <SafeAreaView style={[styles.container, { backgroundColor: '#FFFFFF' }]} edges={['top']}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Activity</Text>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+        <View style={[styles.header, { borderBottomColor: colors.border }]}>
+          <Text style={[styles.title, { color: colors.text }]}>Activity</Text>
           <TouchableOpacity
             style={styles.searchBtn}
             onPress={() => setShowSearchModal(true)}
           >
-            <MaterialIcons name="search" size={24} color="#1F2937" />
+            <MaterialIcons name="search" size={24} color={colors.text} />
           </TouchableOpacity>
         </View>
 
@@ -239,9 +242,9 @@ export default function ActivityScreen() {
             filteredActivities.map(renderActivityItem)
           ) : (
             <View style={styles.emptyContainer}>
-              <MaterialIcons name="history" size={64} color="#D1D5DB" />
-              <Text style={styles.emptyText}>No activity yet</Text>
-              <Text style={styles.emptySubtext}>
+              <MaterialIcons name="history" size={64} color={colors.icon} />
+              <Text style={[styles.emptyText, { color: colors.text }]}>No activity yet</Text>
+              <Text style={[styles.emptySubtext, { color: colors.icon }]}>
                 Your group and expense activity will appear here
               </Text>
             </View>
@@ -265,30 +268,30 @@ export default function ActivityScreen() {
         }}
       >
         <View style={styles.searchModalOverlay}>
-          <View style={styles.searchModalContainer}>
-            <View style={styles.searchModalHeader}>
-              <Text style={styles.searchModalTitle}>Search Activity</Text>
+          <View style={[styles.searchModalContainer, { backgroundColor: colors.cardBackground }]}>
+            <View style={[styles.searchModalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.searchModalTitle, { color: colors.text }]}>Search Activity</Text>
               <TouchableOpacity onPress={() => {
                 setShowSearchModal(false);
                 setSearchQuery('');
               }}>
-                <MaterialIcons name="close" size={24} color="#6B7280" />
+                <MaterialIcons name="close" size={24} color={colors.icon} />
               </TouchableOpacity>
             </View>
 
-            <View style={styles.searchInputContainer}>
-              <MaterialIcons name="search" size={20} color="#6B7280" />
+            <View style={[styles.searchInputContainer, { backgroundColor: colors.cardBackground }]}>
+              <MaterialIcons name="search" size={20} color={colors.icon} />
               <TextInput
-                style={styles.searchInput}
+                style={[styles.searchInput, { color: colors.text }]}
                 placeholder="Search activity..."
-                placeholderTextColor="#6B7280"
+                placeholderTextColor={colors.icon}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
                 autoFocus
               />
               {searchQuery.length > 0 && (
                 <TouchableOpacity onPress={() => setSearchQuery('')}>
-                  <MaterialIcons name="clear" size={20} color="#6B7280" />
+                  <MaterialIcons name="clear" size={20} color={colors.icon} />
                 </TouchableOpacity>
               )}
             </View>
@@ -309,7 +312,7 @@ export default function ActivityScreen() {
                 ))
               ) : (
                 <View style={styles.noResultsContainer}>
-                  <Text style={styles.noResultsText}>No activities found</Text>
+                  <Text style={[styles.noResultsText, { color: colors.icon }]}>No activities found</Text>
                 </View>
               )}
             </ScrollView>
@@ -339,14 +342,12 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 20,
     fontFamily: 'Poppins_600SemiBold',
-    color: '#1F2937',
     marginTop: 16,
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 14,
     fontFamily: 'Montserrat_400Regular',
-    color: '#6B7280',
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -357,11 +358,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
   },
   title: {
     fontSize: 28,
-    color: '#1F2937',
     fontFamily: 'Montserrat_600SemiBold',
   },
   searchBtn: {
@@ -398,7 +397,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#0F766E',
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#FFFFFF',
   },
   quarterCircleImage: {
     width: '100%',
@@ -410,19 +408,16 @@ const styles = StyleSheet.create({
   },
   rowTitle: {
     fontSize: 16,
-    color: '#1F2937',
     fontFamily: 'Poppins_600SemiBold',
   },
   rowSubtle: {
     fontSize: 14,
-    color: '#1F2937',
     marginTop: 2,
     fontFamily: 'Poppins_400Regular',
   },
   rowMeta: {
     marginTop: 4,
     fontSize: 12,
-    color: '#6B7280',
     fontFamily: 'Montserrat_400Regular',
   },
   searchModalOverlay: {
@@ -434,7 +429,6 @@ const styles = StyleSheet.create({
   searchModalContainer: {
     width: '90%',
     maxWidth: 500,
-    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     maxHeight: '80%',
     paddingBottom: 20,
@@ -446,11 +440,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
   },
   searchModalTitle: {
     fontSize: 18,
-    color: '#1F2937',
     fontFamily: 'Montserrat_600SemiBold',
   },
   searchInputContainer: {
@@ -460,14 +452,12 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     marginHorizontal: 20,
     marginTop: 16,
-    backgroundColor: '#F9FAFB',
     borderRadius: 12,
     gap: 12,
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: '#1F2937',
     fontFamily: 'Poppins_400Regular',
   },
   searchResults: {
@@ -484,7 +474,6 @@ const styles = StyleSheet.create({
   },
   noResultsText: {
     fontSize: 16,
-    color: '#6B7280',
     fontFamily: 'Poppins_400Regular',
   },
 });

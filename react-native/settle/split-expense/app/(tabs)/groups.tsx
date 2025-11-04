@@ -185,26 +185,26 @@ export default function GroupsScreen() {
         {group.icon}
       </View>
       <View style={styles.groupInfo}>
-        <Text style={styles.groupName}>{group.name}</Text>
-        <Text style={styles.groupStatus}>{group.status}</Text>
+        <Text style={[styles.groupName, { color: colors.text }]}>{group.name}</Text>
+        <Text style={[styles.groupStatus, { color: colors.icon }]}>{group.status}</Text>
       </View>
     </TouchableOpacity>
   );
 
   return (
     <TabLayoutWrapper>
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
         <View style={styles.header}>
           <View style={styles.headerLeft} />
           <View style={styles.headerRight}>
             <TouchableOpacity style={styles.searchButton} onPress={() => setShowSearchModal(true)}>
-              <MaterialIcons name="search" size={24} color="#1F2937" />
+              <MaterialIcons name="search" size={24} color={colors.text} />
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.addGroupButton}
               onPress={() => router.push('/create-group')}
             >
-              <MaterialIcons name="person-add" size={24} color="#1F2937" />
+              <MaterialIcons name="person-add" size={24} color={colors.text} />
             </TouchableOpacity>
           </View>
         </View>
@@ -214,7 +214,7 @@ export default function GroupsScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.settledUpHeader}>
-            <Text style={styles.settledUpText}>
+            <Text style={[styles.settledUpText, { color: colors.text }]}>
               {overallBalance.youOwe === 0 && overallBalance.youAreOwed === 0
                 ? 'You are all settled up!'
                 : overallBalance.youOwe > overallBalance.youAreOwed
@@ -222,7 +222,7 @@ export default function GroupsScreen() {
                 : `You are owed ${(overallBalance.youAreOwed - overallBalance.youOwe).toFixed(2)} overall`}
             </Text>
             <TouchableOpacity style={styles.filterButton} onPress={() => setShowFilterModal(true)}>
-              <MaterialIcons name="tune" size={24} color="#6B7280" />
+              <MaterialIcons name="tune" size={24} color={colors.icon} />
             </TouchableOpacity>
           </View>
 
@@ -253,27 +253,27 @@ export default function GroupsScreen() {
         onRequestClose={() => setShowSearchModal(false)}
       >
         <View style={styles.searchModalOverlay}>
-          <View style={styles.searchModalContainer}>
-            <View style={styles.searchModalHeader}>
-              <Text style={styles.searchModalTitle}>Search</Text>
+          <View style={[styles.searchModalContainer, { backgroundColor: colors.background }]}>
+            <View style={[styles.searchModalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.searchModalTitle, { color: colors.text }]}>Search</Text>
               <TouchableOpacity onPress={() => setShowSearchModal(false)}>
-                <MaterialIcons name="close" size={24} color="#6B7280" />
+                <MaterialIcons name="close" size={24} color={colors.icon} />
               </TouchableOpacity>
             </View>
 
-            <View style={styles.searchInputContainer}>
-              <MaterialIcons name="search" size={20} color="#6B7280" />
+            <View style={[styles.searchInputContainer, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
+              <MaterialIcons name="search" size={20} color={colors.icon} />
               <TextInput
-                style={styles.searchInput}
+                style={[styles.searchInput, { color: colors.text }]}
                 placeholder="Search groups and users..."
-                placeholderTextColor="#6B7280"
+                placeholderTextColor={colors.icon}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
                 autoFocus
               />
               {searchQuery.length > 0 && (
                 <TouchableOpacity onPress={() => setSearchQuery('')}>
-                  <MaterialIcons name="clear" size={20} color="#6B7280" />
+                  <MaterialIcons name="clear" size={20} color={colors.icon} />
                 </TouchableOpacity>
               )}
             </View>
@@ -284,15 +284,15 @@ export default function GroupsScreen() {
                   {/* Groups Section */}
                   {filteredGroups.length > 0 && (
                     <View style={styles.searchSection}>
-                      <Text style={styles.searchSectionTitle}>Groups</Text>
+                      <Text style={[styles.searchSectionTitle, { color: colors.text }]}>Groups</Text>
                       {filteredGroups.map((group) => (
-                        <TouchableOpacity key={group.id} style={styles.searchResultItem}>
+                        <TouchableOpacity key={group.id} style={[styles.searchResultItem, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
                           <View style={styles.searchResultIcon}>
                             <MaterialCommunityIcons name="account-group" size={20} color="#FFFFFF" />
                           </View>
                           <View style={styles.searchResultContent}>
-                            <Text style={styles.searchResultName}>{group.name}</Text>
-                            <Text style={styles.searchResultSubtitle}>
+                            <Text style={[styles.searchResultName, { color: colors.text }]}>{group.name}</Text>
+                            <Text style={[styles.searchResultSubtitle, { color: colors.icon }]}>
                               {group.type.charAt(0).toUpperCase() + group.type.slice(1)} Group
                             </Text>
                           </View>
@@ -304,15 +304,15 @@ export default function GroupsScreen() {
                   {/* Users Section */}
                   {filteredUsers.length > 0 && (
                     <View style={styles.searchSection}>
-                      <Text style={styles.searchSectionTitle}>Users</Text>
+                      <Text style={[styles.searchSectionTitle, { color: colors.text }]}>Users</Text>
                       {filteredUsers.map((user) => (
-                        <TouchableOpacity key={user.id} style={styles.searchResultItem}>
+                        <TouchableOpacity key={user.id} style={[styles.searchResultItem, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
                           <View style={styles.searchResultIcon}>
                             <MaterialIcons name="person" size={20} color="#FFFFFF" />
                           </View>
                           <View style={styles.searchResultContent}>
-                            <Text style={styles.searchResultName}>{user.name}</Text>
-                            <Text style={styles.searchResultSubtitle}>{user.email}</Text>
+                            <Text style={[styles.searchResultName, { color: colors.text }]}>{user.name}</Text>
+                            <Text style={[styles.searchResultSubtitle, { color: colors.icon }]}>{user.email}</Text>
                           </View>
                         </TouchableOpacity>
                       ))}
@@ -322,17 +322,17 @@ export default function GroupsScreen() {
                   {/* No Results */}
                   {filteredGroups.length === 0 && filteredUsers.length === 0 && (
                     <View style={styles.noResultsContainer}>
-                      <MaterialIcons name="search-off" size={40} color="#9CA3AF" />
-                      <Text style={styles.noResultsText}>No results found</Text>
-                      <Text style={styles.noResultsSubtext}>Try different keywords</Text>
+                      <MaterialIcons name="search-off" size={40} color={colors.tabIconDefault} />
+                      <Text style={[styles.noResultsText, { color: colors.icon }]}>No results found</Text>
+                      <Text style={[styles.noResultsSubtext, { color: colors.tabIconDefault }]}>Try different keywords</Text>
                     </View>
                   )}
                 </>
               ) : (
                 <View style={styles.emptySearchContainer}>
-                  <MaterialIcons name="search" size={40} color="#9CA3AF" />
-                  <Text style={styles.emptySearchText}>Search for groups and users</Text>
-                  <Text style={styles.emptySearchSubtext}>Start typing to see results</Text>
+                  <MaterialIcons name="search" size={40} color={colors.tabIconDefault} />
+                  <Text style={[styles.emptySearchText, { color: colors.icon }]}>Search for groups and users</Text>
+                  <Text style={[styles.emptySearchSubtext, { color: colors.tabIconDefault }]}>Start typing to see results</Text>
                 </View>
               )}
             </ScrollView>
@@ -347,15 +347,16 @@ export default function GroupsScreen() {
           activeOpacity={1}
           onPress={() => setShowFilterModal(false)}
         >
-          <TouchableOpacity 
-            style={styles.filterPopupContainer}
+          <TouchableOpacity
+            style={[styles.filterPopupContainer, { backgroundColor: colors.background, borderColor: colors.border }]}
             activeOpacity={1}
             onPress={(e) => e.stopPropagation()}
           >
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[
                 styles.filterPopupOption,
-                selectedFilter === 'all' && styles.filterPopupOptionSelected
+                { backgroundColor: colors.background },
+                selectedFilter === 'all' && { backgroundColor: colors.cardBackground }
               ]}
               onPress={() => {
                 setSelectedFilter('all');
@@ -363,27 +364,29 @@ export default function GroupsScreen() {
               }}
             >
               <View style={styles.filterPopupOptionContent}>
-                <MaterialIcons 
-                  name="group" 
-                  size={18} 
-                  color={selectedFilter === 'all' ? '#7C3AED' : '#6B7280'} 
+                <MaterialIcons
+                  name="group"
+                  size={18}
+                  color={selectedFilter === 'all' ? colors.tint : colors.icon}
                 />
                 <Text style={[
                   styles.filterPopupOptionText,
+                  { color: colors.text },
                   selectedFilter === 'all' && styles.filterPopupOptionTextSelected
                 ]}>
                   All groups
                 </Text>
               </View>
                 {selectedFilter === 'all' && (
-                  <MaterialIcons name="check" size={18} color="#7C3AED" />
+                  <MaterialIcons name="check" size={18} color={colors.tint} />
                 )}
             </TouchableOpacity>
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[
                 styles.filterPopupOption,
-                selectedFilter === 'outstanding' && styles.filterPopupOptionSelected
+                { backgroundColor: colors.background },
+                selectedFilter === 'outstanding' && { backgroundColor: colors.cardBackground }
               ]}
               onPress={() => {
                 setSelectedFilter('outstanding');
@@ -391,27 +394,29 @@ export default function GroupsScreen() {
               }}
             >
               <View style={styles.filterPopupOptionContent}>
-                <MaterialIcons 
-                  name="account-balance-wallet" 
-                  size={18} 
-                  color={selectedFilter === 'outstanding' ? '#7C3AED' : '#6B7280'} 
+                <MaterialIcons
+                  name="account-balance-wallet"
+                  size={18}
+                  color={selectedFilter === 'outstanding' ? colors.tint : colors.icon}
                 />
                 <Text style={[
                   styles.filterPopupOptionText,
+                  { color: colors.text },
                   selectedFilter === 'outstanding' && styles.filterPopupOptionTextSelected
                 ]}>
                   Outstanding balances
                 </Text>
               </View>
                 {selectedFilter === 'outstanding' && (
-                  <MaterialIcons name="check" size={18} color="#7C3AED" />
+                  <MaterialIcons name="check" size={18} color={colors.tint} />
                 )}
             </TouchableOpacity>
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[
                 styles.filterPopupOption,
-                selectedFilter === 'owe' && styles.filterPopupOptionSelected
+                { backgroundColor: colors.background },
+                selectedFilter === 'owe' && { backgroundColor: colors.cardBackground }
               ]}
               onPress={() => {
                 setSelectedFilter('owe');
@@ -419,27 +424,29 @@ export default function GroupsScreen() {
               }}
             >
               <View style={styles.filterPopupOptionContent}>
-                <MaterialIcons 
-                  name="trending-down" 
-                  size={18} 
-                  color={selectedFilter === 'owe' ? '#7C3AED' : '#6B7280'} 
+                <MaterialIcons
+                  name="trending-down"
+                  size={18}
+                  color={selectedFilter === 'owe' ? colors.tint : colors.icon}
                 />
                 <Text style={[
                   styles.filterPopupOptionText,
+                  { color: colors.text },
                   selectedFilter === 'owe' && styles.filterPopupOptionTextSelected
                 ]}>
                   Groups you owe
                 </Text>
               </View>
                 {selectedFilter === 'owe' && (
-                  <MaterialIcons name="check" size={18} color="#7C3AED" />
+                  <MaterialIcons name="check" size={18} color={colors.tint} />
                 )}
             </TouchableOpacity>
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[
                 styles.filterPopupOption,
-                selectedFilter === 'owed' && styles.filterPopupOptionSelected
+                { backgroundColor: colors.background },
+                selectedFilter === 'owed' && { backgroundColor: colors.cardBackground }
               ]}
               onPress={() => {
                 setSelectedFilter('owed');
@@ -447,20 +454,21 @@ export default function GroupsScreen() {
               }}
             >
               <View style={styles.filterPopupOptionContent}>
-                <MaterialIcons 
-                  name="trending-up" 
-                  size={18} 
-                  color={selectedFilter === 'owed' ? '#7C3AED' : '#6B7280'} 
+                <MaterialIcons
+                  name="trending-up"
+                  size={18}
+                  color={selectedFilter === 'owed' ? colors.tint : colors.icon}
                 />
                 <Text style={[
                   styles.filterPopupOptionText,
+                  { color: colors.text },
                   selectedFilter === 'owed' && styles.filterPopupOptionTextSelected
                 ]}>
                   Groups that owe you
                 </Text>
               </View>
                 {selectedFilter === 'owed' && (
-                  <MaterialIcons name="check" size={18} color="#7C3AED" />
+                  <MaterialIcons name="check" size={18} color={colors.tint} />
                 )}
             </TouchableOpacity>
           </TouchableOpacity>
@@ -573,7 +581,6 @@ export default function GroupsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
   },
   header: {
     flexDirection: 'row',
@@ -613,7 +620,6 @@ const styles = StyleSheet.create({
   },
   settledUpText: {
     fontSize: 18,
-    color: '#1F2937',
     fontFamily: 'Montserrat_600SemiBold',
   },
   filterButton: {
@@ -657,13 +663,11 @@ const styles = StyleSheet.create({
   },
   groupName: {
     fontSize: 16,
-    color: '#1F2937',
     marginBottom: 2,
     fontFamily: 'Poppins_600SemiBold',
   },
   groupStatus: {
     fontSize: 14,
-    color: '#6B7280',
     fontFamily: 'Montserrat_400Regular',
   },
   startNewGroupButton: {
@@ -675,7 +679,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 2,
     borderColor: '#16A34A',
-    backgroundColor: '#ffffff',
     gap: 8,
     marginTop: 12,
     marginBottom: 12,
@@ -753,7 +756,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   searchModalContainer: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 20,
     width: '100%',
     maxWidth: 400,
@@ -771,29 +773,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
   },
   searchModalTitle: {
     fontSize: 20,
-    color: '#1F2937',
     fontFamily: 'Montserrat_600SemiBold',
   },
   searchInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
     gap: 12,
     margin: 20,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: '#1F2937',
   },
   searchResults: {
     maxHeight: 400,
@@ -804,7 +801,6 @@ const styles = StyleSheet.create({
   },
   searchSectionTitle: {
     fontSize: 16,
-    color: '#1F2937',
     marginBottom: 12,
     fontFamily: 'Montserrat_600SemiBold',
   },
@@ -813,11 +809,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     paddingHorizontal: 16,
-    backgroundColor: '#F9FAFB',
     borderRadius: 12,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
   },
   searchResultIcon: {
     width: 36,
@@ -833,13 +827,11 @@ const styles = StyleSheet.create({
   },
   searchResultName: {
     fontSize: 16,
-    color: '#1F2937',
     marginBottom: 2,
     fontFamily: 'Poppins_500Medium',
   },
   searchResultSubtitle: {
     fontSize: 14,
-    color: '#6B7280',
     fontFamily: 'Montserrat_400Regular',
   },
   noResultsContainer: {
@@ -849,14 +841,12 @@ const styles = StyleSheet.create({
   },
   noResultsText: {
     fontSize: 16,
-    color: '#6B7280',
     marginTop: 12,
     marginBottom: 4,
     fontFamily: 'Poppins_500Medium',
   },
   noResultsSubtext: {
     fontSize: 14,
-    color: '#9CA3AF',
     fontFamily: 'Montserrat_400Regular',
   },
   emptySearchContainer: {
@@ -866,14 +856,12 @@ const styles = StyleSheet.create({
   },
   emptySearchText: {
     fontSize: 16,
-    color: '#6B7280',
     marginTop: 12,
     marginBottom: 4,
     fontFamily: 'Poppins_500Medium',
   },
   emptySearchSubtext: {
     fontSize: 14,
-    color: '#9CA3AF',
     fontFamily: 'Montserrat_400Regular',
   },
   // Filter Popup Styles
@@ -889,7 +877,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 140, // Position relative to the filter button area
     right: 20,
-    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     minWidth: 260,
     shadowColor: '#000',
@@ -898,7 +885,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 6,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
     overflow: 'hidden',
   },
   filterPopupOption: {
@@ -907,10 +893,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 16,
     paddingHorizontal: 20,
-    backgroundColor: '#FFFFFF',
   },
   filterPopupOptionSelected: {
-    backgroundColor: '#F3F4F6',
   },
   filterPopupOptionContent: {
     flexDirection: 'row',
@@ -919,11 +903,9 @@ const styles = StyleSheet.create({
   },
   filterPopupOptionText: {
     fontSize: 16,
-    color: '#1F2937',
     fontFamily: 'Poppins_500Medium',
   },
   filterPopupOptionTextSelected: {
-    color: '#7C3AED',
     fontFamily: 'Poppins_600SemiBold',
   },
 });

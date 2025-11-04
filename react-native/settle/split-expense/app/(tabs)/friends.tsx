@@ -135,29 +135,29 @@ export default function FriendsScreen() {
   const renderFriendCard = (friend: Friend) => (
     <TouchableOpacity
       key={friend.id}
-      style={styles.friendCard}
+      style={[styles.friendCard, { borderBottomColor: colors.border }]}
     >
-      <View style={styles.friendAvatar}>
-        <MaterialIcons name="person" size={24} color="#6B7280" />
+      <View style={[styles.friendAvatar, { backgroundColor: colors.border }]}>
+        <MaterialIcons name="person" size={24} color={colors.icon} />
       </View>
       <View style={styles.friendInfo}>
-        <Text style={styles.friendName}>{friend.name}</Text>
+        <Text style={[styles.friendName, { color: colors.text }]}>{friend.name}</Text>
       </View>
-      <Text style={styles.friendStatus}>{friend.status || 'no expenses'}</Text>
+      <Text style={[styles.friendStatus, { color: colors.icon }]}>{friend.status || 'no expenses'}</Text>
     </TouchableOpacity>
   );
 
   return (
     <TabLayoutWrapper>
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
         <View style={styles.header}>
           <View style={styles.headerLeft} />
           <View style={styles.headerRight}>
             <TouchableOpacity style={styles.searchButton} onPress={() => setShowSearchModal(true)}>
-              <MaterialIcons name="search" size={24} color="#1F2937" />
+              <MaterialIcons name="search" size={24} color={colors.text} />
             </TouchableOpacity>
             <TouchableOpacity style={styles.addPersonButton} onPress={() => router.push('/add-friends')}>
-              <MaterialCommunityIcons name="account-plus" size={24} color="#1F2937" />
+              <MaterialCommunityIcons name="account-plus" size={24} color={colors.text} />
             </TouchableOpacity>
           </View>
         </View>
@@ -170,7 +170,7 @@ export default function FriendsScreen() {
           nestedScrollEnabled={true}
         >
           <View style={styles.settledUpHeader}>
-            <Text style={styles.settledUpText}>
+            <Text style={[styles.settledUpText, { color: colors.text }]}>
               {overallBalance.youOwe === 0 && overallBalance.youAreOwed === 0
                 ? 'You are all settled up!'
                 : overallBalance.youOwe > overallBalance.youAreOwed
@@ -178,7 +178,7 @@ export default function FriendsScreen() {
                 : `You are owed ${(overallBalance.youAreOwed - overallBalance.youOwe).toFixed(2)} overall`}
             </Text>
             <TouchableOpacity style={styles.filterButton} onPress={() => setShowFilterModal(true)}>
-              <MaterialIcons name="tune" size={24} color="#6B7280" />
+              <MaterialIcons name="tune" size={24} color={colors.icon} />
             </TouchableOpacity>
           </View>
 
@@ -186,9 +186,9 @@ export default function FriendsScreen() {
             {friends.map(renderFriendCard)}
           </View>
 
-          <TouchableOpacity style={styles.addMoreFriendsButton} onPress={() => router.push('/add-friends')}>
-            <MaterialCommunityIcons name="account-plus" size={24} color="#16A34A" />
-            <Text style={styles.addMoreFriendsText}>Add more friends</Text>
+          <TouchableOpacity style={[styles.addMoreFriendsButton, { borderColor: colors.success }]} onPress={() => router.push('/add-friends')}>
+            <MaterialCommunityIcons name="account-plus" size={24} color={colors.success} />
+            <Text style={[styles.addMoreFriendsText, { color: colors.success }]}>Add more friends</Text>
           </TouchableOpacity>
         </ScrollView>
 
@@ -204,53 +204,53 @@ export default function FriendsScreen() {
             activeOpacity={1}
             onPress={() => setShowFilterModal(false)}
           >
-            <TouchableOpacity 
-              style={styles.filterPopupContainer}
+            <TouchableOpacity
+              style={[styles.filterPopupContainer, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}
               activeOpacity={1}
               onPress={(e) => e.stopPropagation()}
             >
-              <TouchableOpacity 
-                style={[styles.filterPopupOption, selectedFilter === 'all' && styles.filterPopupOptionSelected]}
+              <TouchableOpacity
+                style={[styles.filterPopupOption, { backgroundColor: colors.cardBackground }, selectedFilter === 'all' && { backgroundColor: colors.border }]}
                 onPress={() => { setSelectedFilter('all'); setShowFilterModal(false); }}
               >
                 <View style={styles.filterPopupOptionContent}>
-                  <MaterialIcons name="group" size={18} color={selectedFilter === 'all' ? '#7C3AED' : '#6B7280'} />
-                  <Text style={[styles.filterPopupOptionText, selectedFilter === 'all' && styles.filterPopupOptionTextSelected]}>All friends</Text>
+                  <MaterialIcons name="group" size={18} color={selectedFilter === 'all' ? colors.tint : colors.icon} />
+                  <Text style={[styles.filterPopupOptionText, { color: colors.text }, selectedFilter === 'all' && { color: colors.tint }]}>All friends</Text>
                 </View>
-                {selectedFilter === 'all' && <MaterialIcons name="check" size={18} color="#7C3AED" />}
+                {selectedFilter === 'all' && <MaterialIcons name="check" size={18} color={colors.tint} />}
               </TouchableOpacity>
 
-              <TouchableOpacity 
-                style={[styles.filterPopupOption, selectedFilter === 'outstanding' && styles.filterPopupOptionSelected]}
+              <TouchableOpacity
+                style={[styles.filterPopupOption, { backgroundColor: colors.cardBackground }, selectedFilter === 'outstanding' && { backgroundColor: colors.border }]}
                 onPress={() => { setSelectedFilter('outstanding'); setShowFilterModal(false); }}
               >
                 <View style={styles.filterPopupOptionContent}>
-                  <MaterialIcons name="account-balance-wallet" size={18} color={selectedFilter === 'outstanding' ? '#7C3AED' : '#6B7280'} />
-                  <Text style={[styles.filterPopupOptionText, selectedFilter === 'outstanding' && styles.filterPopupOptionTextSelected]}>Outstanding balances</Text>
+                  <MaterialIcons name="account-balance-wallet" size={18} color={selectedFilter === 'outstanding' ? colors.tint : colors.icon} />
+                  <Text style={[styles.filterPopupOptionText, { color: colors.text }, selectedFilter === 'outstanding' && { color: colors.tint }]}>Outstanding balances</Text>
                 </View>
-                {selectedFilter === 'outstanding' && <MaterialIcons name="check" size={18} color="#7C3AED" />}
+                {selectedFilter === 'outstanding' && <MaterialIcons name="check" size={18} color={colors.tint} />}
               </TouchableOpacity>
 
-              <TouchableOpacity 
-                style={[styles.filterPopupOption, selectedFilter === 'owe' && styles.filterPopupOptionSelected]}
+              <TouchableOpacity
+                style={[styles.filterPopupOption, { backgroundColor: colors.cardBackground }, selectedFilter === 'owe' && { backgroundColor: colors.border }]}
                 onPress={() => { setSelectedFilter('owe'); setShowFilterModal(false); }}
               >
                 <View style={styles.filterPopupOptionContent}>
-                  <MaterialIcons name="trending-down" size={18} color={selectedFilter === 'owe' ? '#7C3AED' : '#6B7280'} />
-                  <Text style={[styles.filterPopupOptionText, selectedFilter === 'owe' && styles.filterPopupOptionTextSelected]}>Friends you owe</Text>
+                  <MaterialIcons name="trending-down" size={18} color={selectedFilter === 'owe' ? colors.tint : colors.icon} />
+                  <Text style={[styles.filterPopupOptionText, { color: colors.text }, selectedFilter === 'owe' && { color: colors.tint }]}>Friends you owe</Text>
                 </View>
-                {selectedFilter === 'owe' && <MaterialIcons name="check" size={18} color="#7C3AED" />}
+                {selectedFilter === 'owe' && <MaterialIcons name="check" size={18} color={colors.tint} />}
               </TouchableOpacity>
 
-              <TouchableOpacity 
-                style={[styles.filterPopupOption, selectedFilter === 'owed' && styles.filterPopupOptionSelected]}
+              <TouchableOpacity
+                style={[styles.filterPopupOption, { backgroundColor: colors.cardBackground }, selectedFilter === 'owed' && { backgroundColor: colors.border }]}
                 onPress={() => { setSelectedFilter('owed'); setShowFilterModal(false); }}
               >
                 <View style={styles.filterPopupOptionContent}>
-                  <MaterialIcons name="trending-up" size={18} color={selectedFilter === 'owed' ? '#7C3AED' : '#6B7280'} />
-                  <Text style={[styles.filterPopupOptionText, selectedFilter === 'owed' && styles.filterPopupOptionTextSelected]}>Friends who owe you</Text>
+                  <MaterialIcons name="trending-up" size={18} color={selectedFilter === 'owed' ? colors.tint : colors.icon} />
+                  <Text style={[styles.filterPopupOptionText, { color: colors.text }, selectedFilter === 'owed' && { color: colors.tint }]}>Friends who owe you</Text>
                 </View>
-                {selectedFilter === 'owed' && <MaterialIcons name="check" size={18} color="#7C3AED" />}
+                {selectedFilter === 'owed' && <MaterialIcons name="check" size={18} color={colors.tint} />}
               </TouchableOpacity>
             </TouchableOpacity>
           </TouchableOpacity>
@@ -325,26 +325,26 @@ export default function FriendsScreen() {
         onRequestClose={() => setShowSearchModal(false)}
       >
         <View style={styles.searchModalOverlay}>
-          <View style={styles.searchModalContainer}>
-            <View style={styles.searchModalHeader}>
-              <Text style={styles.searchModalTitle}>Search</Text>
+          <View style={[styles.searchModalContainer, { backgroundColor: colors.cardBackground }]}>
+            <View style={[styles.searchModalHeader, { borderBottomColor: colors.border }]}>
+              <Text style={[styles.searchModalTitle, { color: colors.text }]}>Search</Text>
               <TouchableOpacity onPress={() => setShowSearchModal(false)}>
-                <MaterialIcons name="close" size={24} color="#6B7280" />
+                <MaterialIcons name="close" size={24} color={colors.icon} />
               </TouchableOpacity>
             </View>
-            <View style={styles.searchInputContainer}>
-              <MaterialIcons name="search" size={20} color="#6B7280" />
+            <View style={[styles.searchInputContainer, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
+              <MaterialIcons name="search" size={20} color={colors.icon} />
               <TextInput
-                style={styles.searchInput}
+                style={[styles.searchInput, { color: colors.text }]}
                 placeholder="Search friends..."
-                placeholderTextColor="#6B7280"
+                placeholderTextColor={colors.icon}
                 value={friendName}
                 onChangeText={setFriendName}
                 autoFocus
               />
               {friendName.length > 0 && (
                 <TouchableOpacity onPress={() => setFriendName('')}>
-                  <MaterialIcons name="clear" size={20} color="#6B7280" />
+                  <MaterialIcons name="clear" size={20} color={colors.icon} />
                 </TouchableOpacity>
               )}
             </View>
@@ -353,12 +353,12 @@ export default function FriendsScreen() {
                 .filter(f => f.name.toLowerCase().includes(friendName.toLowerCase()))
                 .map(f => (
                   <View key={f.id} style={styles.searchResultItem}>
-                    <View style={styles.friendAvatar}>
-                      <MaterialIcons name="person" size={20} color="#6B7280" />
+                    <View style={[styles.friendAvatar, { backgroundColor: colors.border }]}>
+                      <MaterialIcons name="person" size={20} color={colors.icon} />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={styles.friendName}>{f.name}</Text>
-                      <Text style={styles.friendStatus}>{f.email}</Text>
+                      <Text style={[styles.friendName, { color: colors.text }]}>{f.name}</Text>
+                      <Text style={[styles.friendStatus, { color: colors.icon }]}>{f.email}</Text>
                     </View>
                   </View>
                 ))}
@@ -374,7 +374,6 @@ export default function FriendsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
   },
   header: {
     flexDirection: 'row',
@@ -415,7 +414,6 @@ const styles = StyleSheet.create({
   settledUpText: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#1F2937',
   },
   filterButton: {
     width: 44,
@@ -433,13 +431,11 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 4,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
   },
   friendAvatar: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#F3F4F6',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -450,11 +446,9 @@ const styles = StyleSheet.create({
   friendName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1F2937',
   },
   friendStatus: {
     fontSize: 14,
-    color: '#6B7280',
   },
   addMoreFriendsButton: {
     flexDirection: 'row',
@@ -464,13 +458,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: '#16A34A',
     gap: 8,
   },
   addMoreFriendsText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#16A34A',
   },
   modalContainer: {
     flex: 1,
@@ -531,7 +523,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   searchModalContainer: {
-    backgroundColor: '#FFFFFF',
     borderRadius: 20,
     width: '100%',
     maxWidth: 400,
@@ -549,29 +540,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
   },
   searchModalTitle: {
     fontSize: 20,
-    color: '#1F2937',
     fontFamily: 'Montserrat_600SemiBold',
   },
   searchInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
     gap: 12,
     margin: 20,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: '#1F2937',
   },
   searchResultItem: {
     flexDirection: 'row',
@@ -592,7 +578,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 140,
     right: 20,
-    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     minWidth: 260,
     shadowColor: '#000',
@@ -601,7 +586,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 6,
     borderWidth: 1,
-    borderColor: '#F3F4F6',
     overflow: 'hidden',
   },
   filterPopupOption: {
@@ -610,10 +594,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 16,
     paddingHorizontal: 20,
-    backgroundColor: '#FFFFFF',
   },
   filterPopupOptionSelected: {
-    backgroundColor: '#F3F4F6',
   },
   filterPopupOptionContent: {
     flexDirection: 'row',
@@ -622,10 +604,8 @@ const styles = StyleSheet.create({
   },
   filterPopupOptionText: {
     fontSize: 16,
-    color: '#1F2937',
   },
   filterPopupOptionTextSelected: {
-    color: '#7C3AED',
     fontWeight: '600',
   },
 });

@@ -6,6 +6,8 @@ import { ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View, ActivityI
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getGroup, deleteGroup, leaveGroup, updateGroupSettings } from '@/apis/groups';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Colors } from '@/constants/theme';
 
 interface GroupMember {
   id: string;
@@ -26,6 +28,8 @@ interface Group {
 export default function GroupSettingsScreen() {
   const router = useRouter();
   const { groupId } = useLocalSearchParams();
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme ?? 'light'];
   const [group, setGroup] = useState<Group | null>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -145,16 +149,16 @@ export default function GroupSettingsScreen() {
   if (loading || !group) {
     return (
       <TabLayoutWrapper>
-        <SafeAreaView style={styles.container} edges={['top']}>
-          <View style={styles.header}>
+        <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+          <View style={[styles.header, { borderBottomColor: colors.border }]}>
             <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-              <MaterialIcons name="arrow-back" size={24} color="#000000" />
+              <MaterialIcons name="arrow-back" size={24} color={colors.text} />
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>Group settings</Text>
+            <Text style={[styles.headerTitle, { color: colors.text }]}>Group settings</Text>
             <View style={styles.headerSpacer} />
           </View>
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#781D27" />
+            <ActivityIndicator size="large" color={colors.tint} />
           </View>
         </SafeAreaView>
       </TabLayoutWrapper>
@@ -165,51 +169,51 @@ export default function GroupSettingsScreen() {
 
   return (
     <TabLayoutWrapper>
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
         {/* Header */}
-        <View style={styles.header}>
+        <View style={[styles.header, { borderBottomColor: colors.border }]}>
           <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-            <MaterialIcons name="arrow-back" size={24} color="#000000" />
+            <MaterialIcons name="arrow-back" size={24} color={colors.text} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Group settings</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Group settings</Text>
           <View style={styles.headerSpacer} />
         </View>
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           {/* Group Identifier Section */}
-          <View style={styles.groupSection}>
+          <View style={[styles.groupSection, { borderBottomColor: colors.border }]}>
             <View style={styles.groupInfo}>
               <View style={styles.groupIcon}>
                 <MaterialIcons name={getGroupIcon(group.type)} size={32} color="#FFFFFF" />
               </View>
               <View style={styles.groupDetails}>
-                <Text style={styles.groupName}>{group.name}</Text>
-                <Text style={styles.groupType}>{capitalizeFirst(group.type)}</Text>
+                <Text style={[styles.groupName, { color: colors.text }]}>{group.name}</Text>
+                <Text style={[styles.groupType, { color: colors.icon }]}>{capitalizeFirst(group.type)}</Text>
               </View>
               <TouchableOpacity style={styles.editButton} onPress={() => router.push('/create-group')}>
-                <MaterialIcons name="edit" size={20} color="#6B7280" />
+                <MaterialIcons name="edit" size={20} color={colors.icon} />
               </TouchableOpacity>
             </View>
           </View>
 
           {/* Group Members Section */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Group members</Text>
+          <View style={[styles.section, { borderBottomColor: colors.border }]}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Group members</Text>
 
             <TouchableOpacity
               style={styles.optionRow}
               onPress={() => router.push(`/add-group-members?groupId=${groupId}`)}
             >
-              <MaterialIcons name="group-add" size={24} color="#6B7280" />
-              <Text style={styles.optionText}>Add people to group</Text>
-              <MaterialIcons name="chevron-right" size={24} color="#D1D5DB" />
+              <MaterialIcons name="group-add" size={24} color={colors.icon} />
+              <Text style={[styles.optionText, { color: colors.text }]}>Add people to group</Text>
+              <MaterialIcons name="chevron-right" size={24} color={colors.border} />
             </TouchableOpacity>
 
             {/* All Group Members */}
             {group.members && group.members.map((member) => {
               const isCurrentUser = currentUser && member.id === currentUser.id;
               return (
-                <View key={member.id} style={styles.memberRow}>
+                <View key={member.id} style={[styles.memberRow, { borderBottomColor: colors.cardBackground }]}>
                   <View style={styles.memberAvatar}>
                     <View style={styles.avatarPattern}>
                       <View style={styles.pattern1} />
@@ -217,10 +221,10 @@ export default function GroupSettingsScreen() {
                     </View>
                   </View>
                   <View style={styles.memberInfo}>
-                    <Text style={styles.memberName}>
+                    <Text style={[styles.memberName, { color: colors.text }]}>
                       {member.name}{isCurrentUser ? ' (you)' : ''}
                     </Text>
-                    <Text style={styles.memberEmail}>
+                    <Text style={[styles.memberEmail, { color: colors.icon }]}>
                       {member.pubkey?.substring(0, 16)}...
                     </Text>
                   </View>
@@ -230,16 +234,16 @@ export default function GroupSettingsScreen() {
           </View>
 
           {/* Advanced Settings Section */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Advanced settings</Text>
+          <View style={[styles.section, { borderBottomColor: colors.border }]}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Advanced settings</Text>
 
             {/* Simplify Group Debts */}
             <View style={styles.settingRow}>
               <View style={styles.settingLeft}>
-                <MaterialIcons name="account-tree" size={24} color="#6B7280" />
+                <MaterialIcons name="account-tree" size={24} color={colors.icon} />
                 <View style={styles.settingContent}>
-                  <Text style={styles.settingTitle}>Simplify group debts</Text>
-                  <Text style={styles.settingDescription}>
+                  <Text style={[styles.settingTitle, { color: colors.text }]}>Simplify group debts</Text>
+                  <Text style={[styles.settingDescription, { color: colors.icon }]}>
                     Automatically combines debts to reduce the total number of repayments between group members.
                   </Text>
                 </View>
@@ -247,8 +251,8 @@ export default function GroupSettingsScreen() {
               <Switch
                 value={simplifyDebts}
                 onValueChange={handleSimplifyDebtsToggle}
-                trackColor={{ false: '#E5E7EB', true: '#10B981' }}
-                thumbColor={simplifyDebts ? '#FFFFFF' : '#FFFFFF'}
+                trackColor={{ false: colors.border, true: colors.success }}
+                thumbColor='#FFFFFF'
               />
             </View>
           </View>
@@ -256,14 +260,14 @@ export default function GroupSettingsScreen() {
           {/* Action Buttons */}
           <View style={styles.actionSection}>
             <TouchableOpacity style={styles.actionRow} onPress={handleLeaveGroup}>
-              <MaterialIcons name="exit-to-app" size={24} color="#DC2626" />
-              <Text style={styles.actionText}>Leave group</Text>
+              <MaterialIcons name="exit-to-app" size={24} color={colors.error} />
+              <Text style={[styles.actionText, { color: colors.error }]}>Leave group</Text>
             </TouchableOpacity>
 
             {isCreator && (
               <TouchableOpacity style={styles.actionRow} onPress={handleDeleteGroup}>
-                <MaterialIcons name="delete" size={24} color="#DC2626" />
-                <Text style={styles.actionText}>Delete group</Text>
+                <MaterialIcons name="delete" size={24} color={colors.error} />
+                <Text style={[styles.actionText, { color: colors.error }]}>Delete group</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -276,7 +280,6 @@ export default function GroupSettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
   },
   loadingContainer: {
     flex: 1,
@@ -289,7 +292,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
   },
   backButton: {
     padding: 8,
@@ -298,7 +300,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 18,
     fontWeight: '600',
-    color: '#1F2937',
     textAlign: 'center',
     fontFamily: 'Montserrat_600SemiBold',
   },
@@ -312,7 +313,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
   },
   groupInfo: {
     flexDirection: 'row',
@@ -333,13 +333,11 @@ const styles = StyleSheet.create({
   groupName: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#1F2937',
     fontFamily: 'Poppins_700Bold',
     marginBottom: 4,
   },
   groupType: {
     fontSize: 14,
-    color: '#6B7280',
     fontFamily: 'Montserrat_400Regular',
   },
   editButton: {
@@ -349,12 +347,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1F2937',
     marginBottom: 12,
     fontFamily: 'Montserrat_600SemiBold',
   },
@@ -367,7 +363,6 @@ const styles = StyleSheet.create({
   optionText: {
     flex: 1,
     fontSize: 16,
-    color: '#1F2937',
     marginLeft: 16,
     fontFamily: 'Poppins_400Regular',
   },
@@ -377,7 +372,6 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 4,
     borderBottomWidth: 1,
-    borderBottomColor: '#F9FAFB',
   },
   memberAvatar: {
     width: 40,
@@ -419,13 +413,11 @@ const styles = StyleSheet.create({
   memberName: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#1F2937',
     fontFamily: 'Poppins_500Medium',
     marginBottom: 2,
   },
   memberEmail: {
     fontSize: 14,
-    color: '#6B7280',
     fontFamily: 'Montserrat_400Regular',
   },
   settingRow: {
@@ -445,13 +437,11 @@ const styles = StyleSheet.create({
   settingTitle: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#1F2937',
     fontFamily: 'Poppins_500Medium',
     marginBottom: 4,
   },
   settingDescription: {
     fontSize: 14,
-    color: '#6B7280',
     fontFamily: 'Montserrat_400Regular',
     marginBottom: 4,
   },
@@ -467,7 +457,6 @@ const styles = StyleSheet.create({
   },
   actionText: {
     fontSize: 16,
-    color: '#DC2626',
     marginLeft: 16,
     fontFamily: 'Poppins_500Medium',
   },

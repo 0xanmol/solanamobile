@@ -6,22 +6,24 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Colors } from '@/constants/theme';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme ?? 'light'];
   const insets = useSafeAreaInsets();
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#1CC29F',
-        tabBarInactiveTintColor: '#9CA3AF',
+        tabBarActiveTintColor: colors.tint,
+        tabBarInactiveTintColor: colors.tabIconDefault,
         headerShown: false,
         tabBarButton: HapticTab,
         tabBarStyle: {
-          backgroundColor: '#FFFFFF',
+          backgroundColor: colors.background,
           borderTopWidth: 1,
-          borderTopColor: '#F1F5F9',
+          borderTopColor: colors.border,
           height: 75 + insets.bottom,
           paddingBottom: 16 + insets.bottom,
           paddingTop: 8,
@@ -111,16 +113,16 @@ export default function TabLayout() {
                 width: 28,
                 height: 28,
                 borderRadius: 14,
-                backgroundColor: focused ? '#1F2937' : 'transparent',
+                backgroundColor: focused ? colors.text : 'transparent',
                 borderWidth: 2,
-                borderColor: focused ? '#1CC29F' : 'transparent',
+                borderColor: focused ? colors.tint : 'transparent',
                 justifyContent: 'center',
                 alignItems: 'center',
               }}>
-                <MaterialIcons 
-                  size={16} 
-                  name="account-circle" 
-                  color={focused ? '#FFFFFF' : color} 
+                <MaterialIcons
+                  size={16}
+                  name="account-circle"
+                  color={focused ? colors.background : color}
                 />
               </View>
             </View>

@@ -14,6 +14,8 @@ import {
   View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Colors } from '@/constants/theme';
 
 import { createGroup, CreateGroupData } from '../apis/groups';
 
@@ -21,6 +23,8 @@ type GroupType = 'trip' | 'home' | 'couple' | 'other';
 
 export default function CreateGroupScreen() {
   const router = useRouter();
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme ?? 'light'];
   const [groupName, setGroupName] = useState('');
   const [selectedType, setSelectedType] = useState<GroupType>('trip');
   const [addTripDates, setAddTripDates] = useState(true);
@@ -140,37 +144,37 @@ export default function CreateGroupScreen() {
     {
       key: 'trip' as GroupType,
       label: 'Trip',
-      icon: <MaterialIcons name="flight" size={24} color={selectedType === 'trip' ? "#16A34A" : "#6B7280"} />,
+      icon: <MaterialIcons name="flight" size={24} color={selectedType === 'trip' ? colors.success : colors.icon} />,
     },
     {
       key: 'home' as GroupType,
       label: 'Home',
-      icon: <MaterialIcons name="home" size={24} color={selectedType === 'home' ? "#16A34A" : "#6B7280"} />,
+      icon: <MaterialIcons name="home" size={24} color={selectedType === 'home' ? colors.success : colors.icon} />,
     },
     {
       key: 'couple' as GroupType,
       label: 'Couple',
-      icon: <MaterialIcons name="favorite" size={24} color={selectedType === 'couple' ? "#16A34A" : "#6B7280"} />,
+      icon: <MaterialIcons name="favorite" size={24} color={selectedType === 'couple' ? colors.success : colors.icon} />,
     },
     {
       key: 'other' as GroupType,
       label: 'Other',
-      icon: <MaterialIcons name="list" size={24} color={selectedType === 'other' ? "#16A34A" : "#6B7280"} />,
+      icon: <MaterialIcons name="list" size={24} color={selectedType === 'other' ? colors.success : colors.icon} />,
     },
   ];
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={handleBack} style={styles.closeButton}>
-          <Text style={styles.closeIcon}>×</Text>
+          <Text style={[styles.closeIcon, { color: colors.text }]}>×</Text>
         </TouchableOpacity>
         <View style={styles.headerCenter} pointerEvents="none">
-          <Text style={styles.headerTitle}>Create a group</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Create a group</Text>
         </View>
         <TouchableOpacity onPress={handleDone} style={styles.doneButton}>
-          <Text style={styles.doneText}>Done</Text>
+          <Text style={[styles.doneText, { color: colors.tint }]}>Done</Text>
         </TouchableOpacity>
       </View>
 
@@ -178,20 +182,20 @@ export default function CreateGroupScreen() {
         {/* Group Name Section */}
         <View style={styles.section}>
           <View style={styles.groupNameRow}>
-            <View style={styles.groupImagePlaceholder}>
-              <MaterialIcons name="camera-alt" size={28} color="#6B7280" />
-              <View style={styles.plusIcon}>
+            <View style={[styles.groupImagePlaceholder, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
+              <MaterialIcons name="camera-alt" size={28} color={colors.icon} />
+              <View style={[styles.plusIcon, { backgroundColor: colors.tint, borderColor: colors.background }]}>
                 <MaterialIcons name="add" size={18} color="#FFFFFF" />
               </View>
             </View>
             <View style={styles.groupNameContainer}>
-              <Text style={styles.groupNameLabel}>Group name</Text>
+              <Text style={[styles.groupNameLabel, { color: colors.text }]}>Group name</Text>
               <TextInput
-                style={styles.groupNameInput}
+                style={[styles.groupNameInput, { color: colors.text, borderBottomColor: colors.border }]}
                 placeholder="Enter group name"
                 value={groupName}
                 onChangeText={setGroupName}
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={colors.icon}
               />
             </View>
           </View>
@@ -199,14 +203,15 @@ export default function CreateGroupScreen() {
 
         {/* Group Type Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Type</Text>
+          <Text style={[styles.sectionLabel, { color: colors.text }]}>Type</Text>
           <View style={styles.groupTypesRow}>
             {groupTypes.map((type) => (
               <TouchableOpacity
                 key={type.key}
                 style={[
                   styles.groupTypeButton,
-                  selectedType === type.key && styles.groupTypeButtonSelected,
+                  { borderColor: colors.border, backgroundColor: colors.background },
+                  selectedType === type.key && { backgroundColor: '#D6F5EF', borderColor: colors.success, borderWidth: 2 },
                 ]}
                 onPress={() => setSelectedType(type.key)}
               >
@@ -215,7 +220,8 @@ export default function CreateGroupScreen() {
                 </View>
                 <Text style={[
                   styles.groupTypeLabel,
-                  selectedType === type.key && styles.groupTypeLabelSelected,
+                  { color: colors.icon },
+                  selectedType === type.key && { color: colors.success, fontWeight: '600' },
                 ]}>
                   {type.label}
                 </Text>
@@ -228,48 +234,48 @@ export default function CreateGroupScreen() {
         {selectedType === 'trip' && (
           <View style={styles.section}>
             <View style={styles.tripDatesHeader}>
-              <Text style={styles.sectionLabel}>Add trip dates</Text>
+              <Text style={[styles.sectionLabel, { color: colors.text }]}>Add trip dates</Text>
               <Switch
                 value={addTripDates}
                 onValueChange={setAddTripDates}
-                trackColor={{ false: '#E5E7EB', true: '#16A34A' }}
+                trackColor={{ false: colors.border, true: colors.success }}
                 thumbColor="#FFFFFF"
               />
             </View>
-            <Text style={styles.tripDatesDescription}>
+            <Text style={[styles.tripDatesDescription, { color: colors.icon }]}>
               Splitwise will remind friends to join, add expenses, and settle up.
             </Text>
-            
+
             {addTripDates && (
               <View style={styles.dateInputsContainer}>
                 <View style={styles.dateInputRow}>
-                  <Text style={styles.dateLabel}>Start</Text>
-                  <View style={styles.dateInputContainer}>
-                    <Text style={styles.dateInput}>{startDate}</Text>
-                    <TouchableOpacity 
+                  <Text style={[styles.dateLabel, { color: colors.text }]}>Start</Text>
+                  <View style={[styles.dateInputContainer, { borderBottomColor: colors.text }]}>
+                    <Text style={[styles.dateInput, { color: colors.text }]}>{startDate}</Text>
+                    <TouchableOpacity
                       onPress={() => {
                         console.log('Start date picker pressed');
                         setShowStartDatePicker(true);
                       }}
                       style={{ padding: 8 }}
                     >
-                      <MaterialIcons name="event" size={20} color="#6B7280" />
+                      <MaterialIcons name="event" size={20} color={colors.icon} />
                     </TouchableOpacity>
                   </View>
                 </View>
-                
+
                 <View style={styles.dateInputRow}>
-                  <Text style={styles.dateLabel}>End</Text>
-                  <View style={styles.dateInputContainer}>
-                    <Text style={styles.dateInput}>{endDate || 'Select end date'}</Text>
-                    <TouchableOpacity 
+                  <Text style={[styles.dateLabel, { color: colors.text }]}>End</Text>
+                  <View style={[styles.dateInputContainer, { borderBottomColor: colors.text }]}>
+                    <Text style={[styles.dateInput, { color: colors.text }]}>{endDate || 'Select end date'}</Text>
+                    <TouchableOpacity
                       onPress={() => {
                         console.log('End date picker pressed');
                         setShowEndDatePicker(true);
                       }}
                       style={{ padding: 8 }}
                     >
-                      <MaterialIcons name="event" size={20} color="#6B7280" />
+                      <MaterialIcons name="event" size={20} color={colors.icon} />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -288,14 +294,14 @@ export default function CreateGroupScreen() {
           onRequestClose={() => setShowStartDatePicker(false)}
         >
           <View style={styles.datePickerModal}>
-            <View style={styles.datePickerContainer}>
-              <View style={styles.datePickerHeader}>
+            <View style={[styles.datePickerContainer, { backgroundColor: colors.background }]}>
+              <View style={[styles.datePickerHeader, { borderBottomColor: colors.border }]}>
                 <TouchableOpacity onPress={() => setShowStartDatePicker(false)}>
-                  <Text style={styles.datePickerCancel}>Cancel</Text>
+                  <Text style={[styles.datePickerCancel, { color: colors.icon }]}>Cancel</Text>
                 </TouchableOpacity>
-                <Text style={styles.datePickerTitle}>Select Start Date</Text>
+                <Text style={[styles.datePickerTitle, { color: colors.text }]}>Select Start Date</Text>
                 <TouchableOpacity onPress={handleStartDateConfirm}>
-                  <Text style={styles.datePickerDone}>Done</Text>
+                  <Text style={[styles.datePickerDone, { color: colors.tint }]}>Done</Text>
                 </TouchableOpacity>
               </View>
               <DateTimePicker
@@ -328,14 +334,14 @@ export default function CreateGroupScreen() {
           onRequestClose={() => setShowEndDatePicker(false)}
         >
           <View style={styles.datePickerModal}>
-            <View style={styles.datePickerContainer}>
-              <View style={styles.datePickerHeader}>
+            <View style={[styles.datePickerContainer, { backgroundColor: colors.background }]}>
+              <View style={[styles.datePickerHeader, { borderBottomColor: colors.border }]}>
                 <TouchableOpacity onPress={() => setShowEndDatePicker(false)}>
-                  <Text style={styles.datePickerCancel}>Cancel</Text>
+                  <Text style={[styles.datePickerCancel, { color: colors.icon }]}>Cancel</Text>
                 </TouchableOpacity>
-                <Text style={styles.datePickerTitle}>Select End Date</Text>
+                <Text style={[styles.datePickerTitle, { color: colors.text }]}>Select End Date</Text>
                 <TouchableOpacity onPress={handleEndDateConfirm}>
-                  <Text style={styles.datePickerDone}>Done</Text>
+                  <Text style={[styles.datePickerDone, { color: colors.tint }]}>Done</Text>
                 </TouchableOpacity>
               </View>
               <DateTimePicker
@@ -366,7 +372,6 @@ export default function CreateGroupScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
   },
   header: {
     flexDirection: 'row',
@@ -375,7 +380,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
   },
   headerCenter: {
     position: 'absolute',
@@ -391,12 +395,10 @@ const styles = StyleSheet.create({
   },
   closeIcon: {
     fontSize: 24,
-    color: '#1F2937',
     fontWeight: '400',
   },
   headerTitle: {
     fontSize: 18,
-    color: '#1F2937',
     fontFamily: 'Montserrat_600SemiBold',
   },
   doneButton: {
@@ -405,7 +407,6 @@ const styles = StyleSheet.create({
   },
   doneText: {
     fontSize: 16,
-    color: '#7C3AED',
     fontFamily: 'Poppins_600SemiBold',
   },
   content: {
@@ -424,12 +425,10 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 12,
-    backgroundColor: '#F9FAFB',
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
     borderWidth: 1,
-    borderColor: '#E5E7EB',
   },
   plusIcon: {
     position: 'absolute',
@@ -438,11 +437,9 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: '#7C3AED',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: '#FFFFFF',
   },
   groupNameContainer: {
     flex: 1,
@@ -450,22 +447,18 @@ const styles = StyleSheet.create({
   },
   groupNameLabel: {
     fontSize: 16,
-    color: '#1F2937',
     marginBottom: 8,
     fontFamily: 'Poppins_500Medium',
   },
   groupNameInput: {
     fontSize: 16,
-    color: '#1F2937',
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
     paddingBottom: 8,
     paddingTop: 2,
   },
   sectionLabel: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#1F2937',
     marginBottom: 12,
   },
   groupTypesRow: {
@@ -479,15 +472,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#FFFFFF',
     minHeight: 72,
     maxWidth: 80,
   },
   groupTypeButtonSelected: {
-    backgroundColor: '#D6F5EF',
-    borderColor: '#16A34A',
-    borderWidth: 2,
   },
   groupTypeIcon: {
     marginBottom: 8,
@@ -495,11 +483,8 @@ const styles = StyleSheet.create({
   groupTypeLabel: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#6B7280',
   },
   groupTypeLabelSelected: {
-    color: '#16A34A',
-    fontWeight: '600',
   },
   tripDatesHeader: {
     flexDirection: 'row',
@@ -509,7 +494,6 @@ const styles = StyleSheet.create({
   },
   tripDatesDescription: {
     fontSize: 14,
-    color: '#6B7280',
     lineHeight: 20,
     marginBottom: 16,
   },
@@ -522,21 +506,18 @@ const styles = StyleSheet.create({
   dateLabel: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#1F2937',
   },
   dateInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     borderBottomWidth: 1,
-    borderBottomColor: '#374151',
     paddingBottom: 8,
     paddingTop: 2,
   },
   dateInput: {
     flex: 1,
     fontSize: 16,
-    color: '#1F2937',
     paddingVertical: 2,
   },
   datePickerModal: {
@@ -545,7 +526,6 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   datePickerContainer: {
-    backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     paddingBottom: 34,
@@ -557,20 +537,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
   },
   datePickerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#1F2937',
   },
   datePickerCancel: {
     fontSize: 16,
-    color: '#6B7280',
   },
   datePickerDone: {
     fontSize: 16,
-    color: '#7C3AED',
     fontWeight: '600',
   },
 });

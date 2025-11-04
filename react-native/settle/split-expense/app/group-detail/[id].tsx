@@ -9,10 +9,14 @@ import { getGroup, Group } from '@/apis/groups';
 import { getExpenses, Expense } from '@/apis/expenses';
 import { getBalances, Balance } from '@/apis/balances';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Colors } from '@/constants/theme';
 
 export default function GroupDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme ?? 'light'];
   const [activeTab, setActiveTab] = useState('settle-up');
   const [group, setGroup] = useState<Group | null>(null);
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -80,8 +84,8 @@ export default function GroupDetailScreen() {
   if (loading || !currentUser) {
     return (
       <TabLayoutWrapper>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#781D27" />
+        <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+          <ActivityIndicator size="large" color={colors.tint} />
         </View>
       </TabLayoutWrapper>
     );
@@ -90,8 +94,8 @@ export default function GroupDetailScreen() {
   if (!group) {
     return (
       <TabLayoutWrapper>
-        <View style={styles.loadingContainer}>
-          <Text>Group not found.</Text>
+        <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+          <Text style={{ color: colors.text }}>Group not found.</Text>
         </View>
       </TabLayoutWrapper>
     );
@@ -102,11 +106,11 @@ export default function GroupDetailScreen() {
       <View style={styles.settleUpContent}>
         {expenses.length === 0 ? (
           <View style={styles.settledMessage}>
-            <Text style={styles.settledText}>You are all settled up in this group.</Text>
+            <Text style={[styles.settledText, { color: colors.icon }]}>You are all settled up in this group.</Text>
           </View>
         ) : (
           <View style={styles.expensesSection}>
-            <Text style={styles.expensesHeader}>October 2025</Text>
+            <Text style={[styles.expensesHeader, { color: colors.text }]}>October 2025</Text>
             {expenses.map((expense) => {
               if (!currentUser) return null;
 
@@ -114,11 +118,11 @@ export default function GroupDetailScreen() {
               const userIsParticipant = expense.participants?.some(p => p.user_id === currentUser.id);
               let status = '';
               let amount = 0;
-              let statusColor = '#6B7280';
+              let statusColor = colors.icon;
 
               if (userPaid) {
                 status = 'you lent';
-                statusColor = '#10B981';
+                statusColor = colors.success;
                 const userShare = expense.participants.find(p => p.user_id === currentUser.id)?.share || 0;
                 amount = expense.amount - userShare;
               } else if (userIsParticipant) {
@@ -130,14 +134,14 @@ export default function GroupDetailScreen() {
               }
 
               return (
-                <View key={expense.id} style={styles.expenseItem}>
+                <View key={expense.id} style={[styles.expenseItem, { borderBottomColor: colors.border }]}>
                   <View style={styles.expenseLeft}>
-                    <Text style={styles.expenseDate}>{new Date(expense.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</Text>
-                    <MaterialIcons name="receipt" size={20} color="#6B7280" />
+                    <Text style={[styles.expenseDate, { color: colors.icon }]}>{new Date(expense.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</Text>
+                    <MaterialIcons name="receipt" size={20} color={colors.icon} />
                   </View>
                   <View style={styles.expenseCenter}>
-                    <Text style={styles.expenseTitle}>{expense.description}</Text>
-                    <Text style={styles.expensePaidBy}>{userPaid ? `You paid ${expense.amount.toFixed(2)}` : `${expense.paid_by_name} paid ${expense.amount.toFixed(2)}`}</Text>
+                    <Text style={[styles.expenseTitle, { color: colors.text }]}>{expense.description}</Text>
+                    <Text style={[styles.expensePaidBy, { color: colors.icon }]}>{userPaid ? `You paid ${expense.amount.toFixed(2)}` : `${expense.paid_by_name} paid ${expense.amount.toFixed(2)}`}</Text>
                   </View>
                   <View style={styles.expenseRight}>
                     <Text style={[styles.expenseStatus, { color: statusColor }]}>{status}</Text>
@@ -154,13 +158,13 @@ export default function GroupDetailScreen() {
 
   return (
     <TabLayoutWrapper>
-      <SafeAreaView style={styles.container} edges={['top']}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
          <View style={styles.header}><TouchableOpacity style={styles.backButton} onPress={() => router.back()}><MaterialIcons name="arrow-back" size={24} color="#FFFFFF" /></TouchableOpacity><TouchableOpacity style={styles.settingsButton} onPress={() => router.push(`/group-settings?groupId=${id}`)}><MaterialIcons name="settings" size={24} color="#FFFFFF" /></TouchableOpacity></View>
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <ScrollView style={[styles.content, { backgroundColor: colors.background }]} showsVerticalScrollIndicator={false}>
           <View style={styles.groupInfo}>
-            <View style={styles.iconContainer}><View style={[styles.iconBackground, { backgroundColor: group.color || '#781D27' }]}><MaterialIcons name={group.type === 'home' ? 'home' : group.type === 'trip' ? 'flight' : group.type === 'couple' ? 'favorite' : 'list'} size={40} color="#FFFFFF" /></View></View>
-            <Text style={styles.groupName}>{group.name}</Text>
-            <Text style={styles.subText}>
+            <View style={styles.iconContainer}><View style={[styles.iconBackground, { backgroundColor: group.color || '#781D27', borderColor: colors.background }]}><MaterialIcons name={group.type === 'home' ? 'home' : group.type === 'trip' ? 'flight' : group.type === 'couple' ? 'favorite' : 'list'} size={40} color="#FFFFFF" /></View></View>
+            <Text style={[styles.groupName, { color: colors.text }]}>{group.name}</Text>
+            <Text style={[styles.subText, { color: colors.icon }]}>
               {userBalance === 0
                 ? '🎉 You are all settled up in this group.'
                 : userBalance < 0
@@ -169,16 +173,16 @@ export default function GroupDetailScreen() {
             </Text>
           </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.navButtonsScrollView} contentContainerStyle={styles.navButtonsContainer}>
-              <TouchableOpacity style={[styles.navButton, activeTab === 'settle-up' && styles.activeNavButton]} onPress={() => setActiveTab('settle-up')}><Text style={[styles.navButtonText, activeTab === 'settle-up' && styles.activeNavButtonText]}>Settle up</Text></TouchableOpacity>
-              <TouchableOpacity style={[styles.navButton, activeTab === 'charts' && styles.activeNavButton]} onPress={() => setActiveTab('charts')}><MaterialIcons name="diamond" size={20} color="#8B5CF6" /><Text style={[styles.navButtonText, activeTab === 'charts' && styles.activeNavButtonText]}>Charts</Text></TouchableOpacity>
+              <TouchableOpacity style={[styles.navButton, { backgroundColor: colors.background, borderColor: colors.border }, activeTab === 'settle-up' && styles.activeNavButton]} onPress={() => setActiveTab('settle-up')}><Text style={[styles.navButtonText, { color: colors.text }, activeTab === 'settle-up' && styles.activeNavButtonText]}>Settle up</Text></TouchableOpacity>
+              <TouchableOpacity style={[styles.navButton, { backgroundColor: colors.background, borderColor: colors.border }, activeTab === 'charts' && styles.activeNavButton]} onPress={() => setActiveTab('charts')}><MaterialIcons name="diamond" size={20} color="#8B5CF6" /><Text style={[styles.navButtonText, { color: colors.text }, activeTab === 'charts' && styles.activeNavButtonText]}>Charts</Text></TouchableOpacity>
                             <TouchableOpacity
-                              style={[styles.navButton, activeTab === 'balances' && styles.activeNavButton]}
+                              style={[styles.navButton, { backgroundColor: colors.background, borderColor: colors.border }, activeTab === 'balances' && styles.activeNavButton]}
                               onPress={() => router.push({ pathname: '/balances', params: { groupId: id } })}
-                            ><Text style={[styles.navButtonText, activeTab === 'balances' && styles.activeNavButtonText]}>Balances</Text></TouchableOpacity>
+                            ><Text style={[styles.navButtonText, { color: colors.text }, activeTab === 'balances' && styles.activeNavButtonText]}>Balances</Text></TouchableOpacity>
             </ScrollView>
           {activeTab === 'settle-up' && renderSettleUpContent()}
-          {activeTab === 'charts' && (<View style={styles.mainBody}><Text style={styles.title}>Charts</Text><Text style={styles.subtitle}>Charts content coming soon</Text></View>)}
-          {!['settle-up', 'charts'].includes(activeTab) && (<View style={styles.mainBody}><Text style={styles.title}>You are all settled up</Text><Text style={styles.subtitle}>Tap to show settled expenses</Text><View style={styles.checkmarkContainer}><View style={[styles.checkmarkPart, styles.checkmarkPart1]} /><View style={[styles.checkmarkPart, styles.checkmarkPart2]} /><View style={[styles.checkmarkPart, styles.checkmarkPart3]} /><View style={[styles.checkmarkPart, styles.checkmarkPart4]} /><View style={[styles.checkmarkPart, styles.checkmarkPart5]} /></View></View>)}
+          {activeTab === 'charts' && (<View style={styles.mainBody}><Text style={[styles.title, { color: colors.text }]}>Charts</Text><Text style={[styles.subtitle, { color: colors.icon }]}>Charts content coming soon</Text></View>)}
+          {!['settle-up', 'charts'].includes(activeTab) && (<View style={styles.mainBody}><Text style={[styles.title, { color: colors.text }]}>You are all settled up</Text><Text style={[styles.subtitle, { color: colors.icon }]}>Tap to show settled expenses</Text><View style={styles.checkmarkContainer}><View style={[styles.checkmarkPart, styles.checkmarkPart1]} /><View style={[styles.checkmarkPart, styles.checkmarkPart2]} /><View style={[styles.checkmarkPart, styles.checkmarkPart3]} /><View style={[styles.checkmarkPart, styles.checkmarkPart4]} /><View style={[styles.checkmarkPart, styles.checkmarkPart5]} /></View></View>)}
         </ScrollView>
                 <FabButtons
                   onAddExpensePress={() => router.push({ pathname: '/add-expense', params: { groupId: id } })}
@@ -190,44 +194,44 @@ export default function GroupDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#FFFFFF' },
+  container: { flex: 1 },
   loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   header: { height: 60, backgroundColor: '#781D27', position: 'relative', justifyContent: 'center' },
   backButton: { position: 'absolute', top: 15, left: 20, padding: 8, zIndex: 5 },
   settingsButton: { position: 'absolute', top: 15, right: 20, padding: 8, zIndex: 5 },
-  content: { flex: 1, backgroundColor: '#FFFFFF' },
+  content: { flex: 1 },
   groupInfo: { alignItems: 'center', paddingVertical: 16 },
   iconContainer: { shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 5, elevation: 4 },
-  iconBackground: { width: 64, height: 64, backgroundColor: '#781D27', borderRadius: 14, borderWidth: 2, borderColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center' },
-  groupName: { fontSize: 24, fontWeight: '600', color: '#222222', marginTop: 8, fontFamily: 'Poppins_600SemiBold' },
-  subText: { fontSize: 14, color: '#6B7280', textAlign: 'center', marginTop: 4, fontFamily: 'Montserrat_400Regular' },
+  iconBackground: { width: 64, height: 64, borderRadius: 14, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  groupName: { fontSize: 24, fontWeight: '600', marginTop: 8, fontFamily: 'Poppins_600SemiBold' },
+  subText: { fontSize: 14, textAlign: 'center', marginTop: 4, fontFamily: 'Montserrat_400Regular' },
   navButtonsScrollView: { marginBottom: 16 },
   navButtonsContainer: { flexDirection: 'row', paddingHorizontal: 20, gap: 8, justifyContent: 'flex-start' },
-   navButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFF', paddingVertical: 6, paddingHorizontal: 10, borderRadius: 16, borderWidth: 1, borderColor: '#E5E7EB', shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 1, shadowOffset: { width: 0, height: 1 }, elevation: 1, gap: 3, minWidth: 70, marginRight: 6 },
-   navButtonText: { fontSize: 11, color: '#1F2937', fontWeight: '600', fontFamily: 'Poppins_600SemiBold' },
+   navButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 6, paddingHorizontal: 10, borderRadius: 16, borderWidth: 1, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 1, shadowOffset: { width: 0, height: 1 }, elevation: 1, gap: 3, minWidth: 70, marginRight: 6 },
+   navButtonText: { fontSize: 11, fontWeight: '600', fontFamily: 'Poppins_600SemiBold' },
    activeNavButton: { backgroundColor: '#F59E0B', borderColor: '#F59E0B' },
    activeNavButtonText: { color: '#FFFFFF' },
    settleUpContent: { paddingHorizontal: 20 },
-   settleUpHeader: { alignItems: 'center', paddingVertical: 16, backgroundColor: '#FFFFFF' },
-   settleUpTitle: { fontSize: 16, fontFamily: 'Montserrat_600SemiBold', color: '#1F2937', marginBottom: 6 },
-   settleUpAmount: { fontSize: 28, fontWeight: '600', color: '#10B981', fontFamily: 'Poppins_600SemiBold' },
+   settleUpHeader: { alignItems: 'center', paddingVertical: 16 },
+   settleUpTitle: { fontSize: 16, fontFamily: 'Montserrat_600SemiBold', marginBottom: 6 },
+   settleUpAmount: { fontSize: 28, fontWeight: '600', fontFamily: 'Poppins_600SemiBold' },
    expensesSection: { paddingBottom: 80 },
-   expensesHeader: { fontSize: 16, fontFamily: 'Montserrat_600SemiBold', color: '#1F2937', marginBottom: 12 },
-   expenseItem: { flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
+   expensesHeader: { fontSize: 16, fontFamily: 'Montserrat_600SemiBold', marginBottom: 12 },
+   expenseItem: { flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 10, borderBottomWidth: 1 },
    expenseLeft: { alignItems: 'center', width: 50, marginRight: 12 },
-   expenseDate: { fontSize: 12, fontFamily: 'Montserrat_400Regular', color: '#6B7280', marginBottom: 4 },
+   expenseDate: { fontSize: 12, fontFamily: 'Montserrat_400Regular', marginBottom: 4 },
    expenseCenter: { flex: 1 },
-   expenseTitle: { fontSize: 16, fontFamily: 'Poppins_500Medium', color: '#1F2937', marginBottom: 4 },
-   expensePaidBy: { fontSize: 14, fontFamily: 'Montserrat_400Regular', color: '#6B7280' },
+   expenseTitle: { fontSize: 16, fontFamily: 'Poppins_500Medium', marginBottom: 4 },
+   expensePaidBy: { fontSize: 14, fontFamily: 'Montserrat_400Regular' },
    expenseRight: { alignItems: 'flex-end', width: 90 },
    expenseStatus: { fontSize: 12, fontFamily: 'Montserrat_400Regular', marginBottom: 2 },
    expenseAmount: { fontSize: 14, fontFamily: 'Poppins_500Medium' },
    settledMessage: { alignItems: 'center', paddingVertical: 16, marginTop: 16 },
-   settledText: { fontSize: 14, fontFamily: 'Montserrat_400Regular', color: '#6B7280', textAlign: 'center', marginBottom: 8 },
-   tapToShowText: { fontSize: 14, fontFamily: 'Montserrat_500Medium', color: '#10B981' },
+   settledText: { fontSize: 14, fontFamily: 'Montserrat_400Regular', textAlign: 'center', marginBottom: 8 },
+   tapToShowText: { fontSize: 14, fontFamily: 'Montserrat_500Medium' },
   mainBody: { alignItems: 'center', marginTop: 32 },
-  title: { fontSize: 20, fontWeight: '600', color: '#222', fontFamily: 'Poppins_600SemiBold' },
-  subtitle: { fontSize: 14, color: '#777', marginTop: 4, marginBottom: 24, fontFamily: 'Montserrat_400Regular' },
+  title: { fontSize: 20, fontWeight: '600', fontFamily: 'Poppins_600SemiBold' },
+  subtitle: { fontSize: 14, marginTop: 4, marginBottom: 24, fontFamily: 'Montserrat_400Regular' },
   checkmarkContainer: { width: 100, height: 100, position: 'relative', marginTop: 16 },
   checkmarkPart: { position: 'absolute' },
   checkmarkPart1: { top: 20, left: 30, width: 40, height: 60, backgroundColor: '#8B5CF6', transform: [{ rotate: '45deg' }] },
