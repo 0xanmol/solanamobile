@@ -7,7 +7,6 @@ import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { addFriend } from "@/apis/friends";
 import {
-  Alert,
   ActivityIndicator,
   Platform,
   ScrollView,
@@ -18,6 +17,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import Toast from "react-native-toast-message";
 
 export default function AddFriendsScreen() {
   const router = useRouter();
@@ -30,7 +30,11 @@ export default function AddFriendsScreen() {
   const handleAddFriend = async () => {
     if (addMethod === "pubkey") {
       if (!pubkey.trim()) {
-        Alert.alert("Error", "Please enter a public key");
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: 'Please enter a public key',
+        });
         return;
       }
 
@@ -39,19 +43,23 @@ export default function AddFriendsScreen() {
 
       // Check length (Solana addresses are typically 32-44 characters)
       if (trimmedPubkey.length < 32 || trimmedPubkey.length > 44) {
-        Alert.alert(
-          "Invalid Public Key",
-          "Solana public keys must be 32-44 characters long. Please check the address and try again."
-        );
+        Toast.show({
+          type: 'error',
+          text1: 'Invalid Public Key',
+          text2: 'Must be 32-44 characters long',
+          visibilityTime: 4000,
+        });
         return;
       }
 
       // Check for base58 characters only (no 0, O, I, l)
       if (!/^[1-9A-HJ-NP-Za-km-z]+$/.test(trimmedPubkey)) {
-        Alert.alert(
-          "Invalid Public Key",
-          "Public key contains invalid characters. Solana addresses use base58 encoding (no 0, O, I, or l characters)."
-        );
+        Toast.show({
+          type: 'error',
+          text1: 'Invalid Public Key',
+          text2: 'Contains invalid characters (no 0, O, I, or l)',
+          visibilityTime: 4000,
+        });
         return;
       }
 
@@ -63,10 +71,12 @@ export default function AddFriendsScreen() {
           throw new Error(`Invalid characters: ${invalidChars.join(', ')}`);
         }
       } catch (error) {
-        Alert.alert(
-          "Invalid Public Key",
-          "Please enter a valid Solana wallet address."
-        );
+        Toast.show({
+          type: 'error',
+          text1: 'Invalid Public Key',
+          text2: 'Please enter a valid Solana wallet address',
+          visibilityTime: 4000,
+        });
         return;
       }
 
@@ -74,28 +84,38 @@ export default function AddFriendsScreen() {
       try {
         const result = await addFriend({ pubkey: pubkey.trim() });
         if (result.success) {
-          Alert.alert("Success", "Friend added successfully!", [
-            {
-              text: "OK",
-              onPress: () => {
-                setPubkey("");
-                router.back();
-              },
-            },
-          ]);
+          Toast.show({
+            type: 'success',
+            text1: 'Friend Added! 🎉',
+            text2: 'Successfully added to your friends list',
+          });
+          setPubkey("");
+          setTimeout(() => router.back(), 500);
         } else {
-          Alert.alert("Error", result.message || "Failed to add friend");
+          Toast.show({
+            type: 'error',
+            text1: 'Error',
+            text2: result.message || 'Failed to add friend',
+          });
         }
       } catch (error) {
         console.error("Error adding friend:", error);
-        Alert.alert("Error", "Failed to add friend. Please try again.");
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: 'Failed to add friend. Please try again.',
+        });
       } finally {
         setIsAdding(false);
       }
     } else {
       // Phone number method
       if (!phone.trim()) {
-        Alert.alert("Error", "Please enter a phone number");
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: 'Please enter a phone number',
+        });
         return;
       }
 
@@ -106,22 +126,28 @@ export default function AddFriendsScreen() {
           name: name.trim() || undefined
         });
         if (result.success) {
-          Alert.alert("Success", "Friend added successfully!", [
-            {
-              text: "OK",
-              onPress: () => {
-                setPhone("");
-                setName("");
-                router.back();
-              },
-            },
-          ]);
+          Toast.show({
+            type: 'success',
+            text1: 'Friend Added! 🎉',
+            text2: 'Successfully added to your friends list',
+          });
+          setPhone("");
+          setName("");
+          setTimeout(() => router.back(), 500);
         } else {
-          Alert.alert("Error", result.message || "Failed to add friend");
+          Toast.show({
+            type: 'error',
+            text1: 'Error',
+            text2: result.message || 'Failed to add friend',
+          });
         }
       } catch (error) {
         console.error("Error adding friend:", error);
-        Alert.alert("Error", "Failed to add friend. Please try again.");
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: 'Failed to add friend. Please try again.',
+        });
       } finally {
         setIsAdding(false);
       }

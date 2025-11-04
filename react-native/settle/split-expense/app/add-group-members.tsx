@@ -7,7 +7,6 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import React, { useState, useEffect } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   ScrollView,
   StyleSheet,
   Text,
@@ -18,6 +17,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getFriends, Friend } from '@/apis/friends';
 import { addGroupMember, getGroup } from '@/apis/groups';
+import Toast from 'react-native-toast-message';
 
 export default function AddGroupMembersScreen() {
   const router = useRouter();
@@ -61,7 +61,11 @@ export default function AddGroupMembersScreen() {
       }
     } catch (error) {
       console.error('Error fetching data:', error);
-      Alert.alert('Error', 'Failed to load friends');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to load friends',
+      });
     } finally {
       setLoading(false);
     }
@@ -79,12 +83,20 @@ export default function AddGroupMembersScreen() {
 
   const handleAddMembers = async () => {
     if (selectedFriends.size === 0) {
-      Alert.alert('No Selection', 'Please select at least one friend to add');
+      Toast.show({
+        type: 'info',
+        text1: 'No Selection',
+        text2: 'Please select at least one friend to add',
+      });
       return;
     }
 
     if (!groupId) {
-      Alert.alert('Error', 'Group ID is missing');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Group ID is missing',
+      });
       return;
     }
 
@@ -106,17 +118,26 @@ export default function AddGroupMembersScreen() {
       }
 
       if (successCount > 0) {
-        Alert.alert(
-          'Success',
-          `Added ${successCount} member${successCount > 1 ? 's' : ''} to the group`,
-          [{ text: 'OK', onPress: () => router.back() }]
-        );
+        Toast.show({
+          type: 'success',
+          text1: 'Success',
+          text2: `Added ${successCount} member${successCount > 1 ? 's' : ''} to the group`,
+        });
+        setTimeout(() => router.back(), 500);
       } else {
-        Alert.alert('Error', 'Failed to add members to the group');
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: 'Failed to add members to the group',
+        });
       }
     } catch (error) {
       console.error('Error adding members:', error);
-      Alert.alert('Error', 'Failed to add members. Please try again.');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to add members. Please try again.',
+      });
     } finally {
       setAdding(false);
     }

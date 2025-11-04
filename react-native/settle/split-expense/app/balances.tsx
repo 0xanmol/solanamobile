@@ -4,11 +4,12 @@ import { useColorScheme } from '@/hooks/use-color-scheme';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useState, useCallback, useMemo } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View, ActivityIndicator, Alert } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getBalances, settleUp, Balance } from '@/apis/balances';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { sendSol } from '@/services/transaction';
+import Toast from 'react-native-toast-message';
 
 export default function BalancesScreen() {
   const router = useRouter();
@@ -76,7 +77,11 @@ export default function BalancesScreen() {
   ) => {
     // Prevent multiple simultaneous settlements
     if (settlingId) {
-      Alert.alert('Please wait', 'A settlement is already in progress');
+      Toast.show({
+        type: 'info',
+        text1: 'Please wait',
+        text2: 'A settlement is already in progress',
+      });
       return;
     }
 
@@ -88,7 +93,12 @@ export default function BalancesScreen() {
       const txResult = await sendSol(recipientPubkey, amount);
 
       if (!txResult.success) {
-        Alert.alert('Transaction Failed', txResult.message || 'Failed to send SOL');
+        Toast.show({
+          type: 'error',
+          text1: 'Transaction Failed',
+          text2: txResult.message || 'Failed to send SOL',
+          visibilityTime: 4000,
+        });
         return;
       }
 
@@ -107,22 +117,31 @@ export default function BalancesScreen() {
       const result = await settleUp(settlementData);
 
       if (result.success) {
-        Alert.alert(
-          'Success!',
-          `Settlement completed successfully!\nTransaction: ${txResult.signature?.substring(0, 8)}...`
-        );
+        Toast.show({
+          type: 'success',
+          text1: 'Settlement Complete! 🎉',
+          text2: `Payment of $${amount.toFixed(2)} sent successfully`,
+          visibilityTime: 3000,
+        });
         fetchData(); // Refresh balances
       } else {
-        Alert.alert(
-          'Warning',
-          `Transaction sent but failed to record in backend: ${result.message}\nTransaction: ${txResult.signature}`
-        );
+        Toast.show({
+          type: 'error',
+          text1: 'Warning',
+          text2: `Transaction sent but failed to record: ${result.message}`,
+          visibilityTime: 4000,
+        });
         // Still refresh to see if backend state changed
         fetchData();
       }
     } catch (error: any) {
       console.error('Settlement error:', error);
-      Alert.alert('Error', error.message || 'Settlement failed. Please try again.');
+      Toast.show({
+        type: 'error',
+        text1: 'Settlement Failed',
+        text2: error.message || 'Please try again',
+        visibilityTime: 4000,
+      });
     } finally {
       setSettlingId(null);
     }

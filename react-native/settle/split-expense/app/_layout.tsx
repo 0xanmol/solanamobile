@@ -11,6 +11,7 @@ import 'react-native-reanimated';
 
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import Toast from 'react-native-toast-message';
 
 export const unstable_settings = {
   anchor: 'login',
@@ -20,25 +21,28 @@ function RootLayoutInner() {
   const colorScheme = useColorScheme();
 
   return (
-    <NavigationThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="login" options={{ headerShown: false }} />
-        <Stack.Screen name="signup" options={{ headerShown: false }} />
-        <Stack.Screen name="signin" options={{ headerShown: false }} />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="create-group" options={{ headerShown: false }} />
-        <Stack.Screen name="add-expense" options={{ headerShown: false }} />
-        <Stack.Screen name="adjust-split" options={{ headerShown: false }} />
-        <Stack.Screen name="add-friends" options={{ headerShown: false, presentation: 'modal' }} />
-        <Stack.Screen name="group-detail/[id]" options={{ headerShown: false }} />
-        <Stack.Screen name="group-settings" options={{ headerShown: false }} />
-        <Stack.Screen name="invite-link" options={{ headerShown: false }} />
-        <Stack.Screen name="balances" options={{ headerShown: false }} />
-        <Stack.Screen name="activity-detail/[id]" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-      </Stack>
-      <StatusBar style="auto" />
-    </NavigationThemeProvider>
+    <>
+      <NavigationThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <Stack>
+          <Stack.Screen name="login" options={{ headerShown: false }} />
+          <Stack.Screen name="signup" options={{ headerShown: false }} />
+          <Stack.Screen name="signin" options={{ headerShown: false }} />
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="create-group" options={{ headerShown: false }} />
+          <Stack.Screen name="add-expense" options={{ headerShown: false }} />
+          <Stack.Screen name="adjust-split" options={{ headerShown: false }} />
+          <Stack.Screen name="add-friends" options={{ headerShown: false, presentation: 'modal' }} />
+          <Stack.Screen name="group-detail/[id]" options={{ headerShown: false }} />
+          <Stack.Screen name="group-settings" options={{ headerShown: false }} />
+          <Stack.Screen name="invite-link" options={{ headerShown: false }} />
+          <Stack.Screen name="balances" options={{ headerShown: false }} />
+          <Stack.Screen name="activity-detail/[id]" options={{ headerShown: false }} />
+          <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+        </Stack>
+        <StatusBar style="auto" />
+      </NavigationThemeProvider>
+      <Toast />
+    </>
   );
 }
 

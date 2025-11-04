@@ -1,12 +1,13 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState, useEffect } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View, Linking, Alert } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/theme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Clipboard from 'expo-clipboard';
+import Toast from 'react-native-toast-message';
 
 interface Activity {
   id: string;
@@ -107,7 +108,11 @@ export default function ActivityDetailScreen() {
     if (activity?.transaction_signature) {
       const explorerUrl = `https://explorer.solana.com/tx/${activity.transaction_signature}?cluster=devnet`;
       Linking.openURL(explorerUrl).catch(() => {
-        Alert.alert('Error', 'Could not open Solana Explorer');
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: 'Could not open Solana Explorer',
+        });
       });
     }
   };
@@ -116,9 +121,17 @@ export default function ActivityDetailScreen() {
     if (activity?.transaction_signature) {
       try {
         await Clipboard.setStringAsync(activity.transaction_signature);
-        Alert.alert('Copied!', 'Transaction signature copied to clipboard');
+        Toast.show({
+          type: 'success',
+          text1: 'Copied!',
+          text2: 'Transaction hash copied to clipboard',
+        });
       } catch (error) {
-        Alert.alert('Error', 'Failed to copy transaction signature');
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: 'Failed to copy transaction hash',
+        });
       }
     }
   };

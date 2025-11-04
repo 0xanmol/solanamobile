@@ -5,7 +5,6 @@ import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Text,
@@ -15,6 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { completeProfile } from '@/apis/auth';
+import Toast from 'react-native-toast-message';
 
 export default function SignupScreen() {
   const [fullName, setFullName] = useState('');
@@ -37,17 +37,26 @@ export default function SignupScreen() {
       });
 
       if (response.success) {
-        Alert.alert(
-          'Profile Complete!',
-          'Welcome to Settle',
-          [{ text: 'OK', onPress: () => router.replace('/(tabs)/groups') }]
-        );
+        Toast.show({
+          type: 'success',
+          text1: 'Profile Complete!',
+          text2: 'Welcome to Settle',
+        });
+        setTimeout(() => router.replace('/(tabs)/groups'), 500);
       } else {
-        Alert.alert('Error', response.message || 'Failed to complete profile');
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: response.message || 'Failed to complete profile',
+        });
       }
     } catch (error: any) {
       console.error('Complete profile error:', error);
-      Alert.alert('Error', 'Failed to complete profile. Please try again.');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to complete profile. Please try again.',
+      });
     } finally {
       setIsSubmitting(false);
     }

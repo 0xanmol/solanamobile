@@ -8,6 +8,7 @@ import { getGroup, deleteGroup, leaveGroup, updateGroupSettings } from '@/apis/g
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/theme';
+import Toast from 'react-native-toast-message';
 
 interface GroupMember {
   id: string;
@@ -74,7 +75,11 @@ export default function GroupSettingsScreen() {
       if (!response.success) {
         // Revert on failure
         setSimplifyDebts(!value);
-        Alert.alert('Error', response.message || 'Failed to update settings');
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: response.message || 'Failed to update settings',
+        });
       }
     }
   };
@@ -92,10 +97,18 @@ export default function GroupSettingsScreen() {
             if (groupId) {
               const response = await leaveGroup(groupId as string);
               if (response.success) {
-                Alert.alert('Success', 'You have left the group');
-                router.replace('/(tabs)/groups');
+                Toast.show({
+                  type: 'success',
+                  text1: 'Success',
+                  text2: 'You have left the group',
+                });
+                setTimeout(() => router.replace('/(tabs)/groups'), 500);
               } else {
-                Alert.alert('Error', response.message || 'Failed to leave group');
+                Toast.show({
+                  type: 'error',
+                  text1: 'Error',
+                  text2: response.message || 'Failed to leave group',
+                });
               }
             }
           },
@@ -117,10 +130,18 @@ export default function GroupSettingsScreen() {
             if (groupId) {
               const response = await deleteGroup(groupId as string);
               if (response.success) {
-                Alert.alert('Success', 'Group has been deleted');
-                router.replace('/(tabs)/groups');
+                Toast.show({
+                  type: 'success',
+                  text1: 'Success',
+                  text2: 'Group has been deleted',
+                });
+                setTimeout(() => router.replace('/(tabs)/groups'), 500);
               } else {
-                Alert.alert('Error', response.message || 'Failed to delete group');
+                Toast.show({
+                  type: 'error',
+                  text1: 'Error',
+                  text2: response.message || 'Failed to delete group',
+                });
               }
             }
           },

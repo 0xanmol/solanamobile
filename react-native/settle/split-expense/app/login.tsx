@@ -5,7 +5,6 @@ import { router } from 'expo-router';
 import React, { useState, useEffect } from 'react';
 import {
     ActivityIndicator,
-    Alert,
     StyleSheet,
     Text,
     TouchableOpacity,
@@ -14,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { connectWallet, storeWalletAuth, getStoredWalletAuth, clearWalletAuth } from '@/apis/auth';
 import { authorizeWallet, reauthorizeWallet } from '@/services/wallet';
+import Toast from 'react-native-toast-message';
 
 export default function LoginScreen() {
   const [isConnecting, setIsConnecting] = useState(false);
@@ -89,21 +89,27 @@ export default function LoginScreen() {
 
         if (response.data.requiresProfileCompletion) {
           // New user - navigate to profile completion
-          Alert.alert(
-            'Welcome!',
-            'Please complete your profile to continue.',
-            [{ text: 'OK', onPress: () => router.push('/signup') }]
-          );
+          Toast.show({
+            type: 'success',
+            text1: 'Welcome!',
+            text2: 'Please complete your profile to continue.',
+          });
+          setTimeout(() => router.push('/signup'), 500);
         } else {
           // Existing user - navigate to main app
-          Alert.alert(
-            'Welcome back!',
-            `Logged in as ${response.data.user.name || 'User'}`,
-            [{ text: 'OK', onPress: () => router.replace('/(tabs)/groups') }]
-          );
+          Toast.show({
+            type: 'success',
+            text1: 'Welcome back!',
+            text2: `Logged in as ${response.data.user.name || 'User'}`,
+          });
+          setTimeout(() => router.replace('/(tabs)/groups'), 500);
         }
       } else {
-        Alert.alert('Connection Failed', response.message || 'Failed to connect to backend');
+        Toast.show({
+          type: 'error',
+          text1: 'Connection Failed',
+          text2: response.message || 'Failed to connect to backend',
+        });
       }
     } catch (error: any) {
       console.error('Wallet connection error:', error);
@@ -111,7 +117,12 @@ export default function LoginScreen() {
       // Use the improved error messages from the wallet service
       const errorMessage = error.message || 'Failed to connect wallet. Please try again.';
 
-      Alert.alert('Error', errorMessage);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: errorMessage,
+        visibilityTime: 4000,
+      });
     } finally {
       setIsConnecting(false);
     }
