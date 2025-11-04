@@ -3,6 +3,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
+  ActivityIndicator,
   Modal,
   Platform,
   ScrollView,
@@ -16,6 +17,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/theme';
+import Toast from 'react-native-toast-message';
 
 import { createGroup, CreateGroupData } from '../apis/groups';
 
@@ -34,15 +36,31 @@ export default function CreateGroupScreen() {
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   const [startDateValue, setStartDateValue] = useState(new Date());
   const [endDateValue, setEndDateValue] = useState(new Date());
+  const [isCreating, setIsCreating] = useState(false);
 
   const handleDone = async () => {
     if (!groupName.trim()) {
-      alert('Please enter a group name.');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Please enter a group name',
+      });
       return;
     }
 
+    if (selectedType === 'trip' && addTripDates && endDate && endDateValue < startDateValue) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'End date must be after start date',
+      });
+      return;
+    }
+
+    setIsCreating(true);
+
     const groupData: CreateGroupData = {
-      name: groupName,
+      name: groupName.trim(),
       type: selectedType,
     };
 
@@ -56,14 +74,29 @@ export default function CreateGroupScreen() {
     try {
       const result = await createGroup(groupData);
       if (result.success) {
+        Toast.show({
+          type: 'success',
+          text1: 'Success',
+          text2: 'Group created successfully',
+        });
         router.back();
       } else {
         console.error('Failed to create group:', result.message);
-        alert(`Error: ${result.message || 'An unknown error occurred.'}`);
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: result.message || 'Failed to create group',
+        });
       }
     } catch (error) {
       console.error('An error occurred during group creation:', error);
-      alert('An unexpected error occurred. Please try again.');
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'An unexpected error occurred. Please try again.',
+      });
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -173,8 +206,16 @@ export default function CreateGroupScreen() {
         <View style={styles.headerCenter} pointerEvents="none">
           <Text style={[styles.headerTitle, { color: colors.text }]}>Create a group</Text>
         </View>
-        <TouchableOpacity onPress={handleDone} style={styles.doneButton}>
-          <Text style={[styles.doneText, { color: colors.tint }]}>Done</Text>
+        <TouchableOpacity
+          onPress={handleDone}
+          style={styles.doneButton}
+          disabled={isCreating}
+        >
+          {isCreating ? (
+            <ActivityIndicator size="small" color={colors.tint} />
+          ) : (
+            <Text style={[styles.doneText, { color: colors.tint }]}>Done</Text>
+          )}
         </TouchableOpacity>
       </View>
 

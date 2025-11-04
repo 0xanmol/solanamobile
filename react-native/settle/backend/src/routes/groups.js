@@ -83,9 +83,37 @@ router.put('/:id', authMiddleware, async (req, res) => {
   try {
     const { name, type, tripStartDate, tripEndDate } = req.body;
 
+    // Build dynamic update query based on provided fields
+    const updates = [];
+    const params = [];
+
+    if (name !== undefined) {
+      updates.push('name = ?');
+      params.push(name);
+    }
+    if (type !== undefined) {
+      updates.push('type = ?');
+      params.push(type);
+    }
+    if (tripStartDate !== undefined) {
+      updates.push('trip_start_date = ?');
+      params.push(formatDate(tripStartDate));
+    }
+    if (tripEndDate !== undefined) {
+      updates.push('trip_end_date = ?');
+      params.push(formatDate(tripEndDate));
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ success: false, message: 'No fields to update' });
+    }
+
+    updates.push('updated_at = CURRENT_TIMESTAMP');
+    params.push(req.params.id);
+
     await db.run(
-      `UPDATE groups SET name = ?, type = ?, trip_start_date = ?, trip_end_date = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
-      [name, type, formatDate(tripStartDate), formatDate(tripEndDate), req.params.id]
+      `UPDATE groups SET ${updates.join(', ')} WHERE id = ?`,
+      params
     );
 
     const group = await db.get('SELECT * FROM groups WHERE id = ?', [req.params.id]);

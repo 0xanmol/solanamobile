@@ -2,9 +2,9 @@ import TabLayoutWrapper from '@/components/TabLayoutWrapper';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import React, { useState, useCallback } from 'react';
-import { ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View, ActivityIndicator, Alert } from 'react-native';
+import { ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View, ActivityIndicator, Alert, Modal, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { getGroup, deleteGroup, leaveGroup, updateGroupSettings } from '@/apis/groups';
+import { getGroup, deleteGroup, leaveGroup, updateGroupSettings, updateGroup } from '@/apis/groups';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors } from '@/constants/theme';
@@ -35,6 +35,8 @@ export default function GroupSettingsScreen() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [simplifyDebts, setSimplifyDebts] = useState(false);
+  const [showEditNameModal, setShowEditNameModal] = useState(false);
+  const [editedGroupName, setEditedGroupName] = useState('');
 
   const fetchData = useCallback(async () => {
     if (!groupId) return;
@@ -81,6 +83,46 @@ export default function GroupSettingsScreen() {
           text2: response.message || 'Failed to update settings',
         });
       }
+    }
+  };
+
+  const handleSaveGroupName = async () => {
+    if (!editedGroupName.trim()) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Group name cannot be empty',
+      });
+      return;
+    }
+
+    try {
+      // Backend now supports partial updates, so we only need to send the name
+      const response = await updateGroup(groupId as string, {
+        name: editedGroupName.trim()
+      });
+      if (response.success) {
+        Toast.show({
+          type: 'success',
+          text1: 'Success',
+          text2: 'Group name updated successfully',
+        });
+        setShowEditNameModal(false);
+        fetchData(); // Refresh group data
+      } else {
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: 'Failed to update group name',
+        });
+      }
+    } catch (error) {
+      console.error('Error updating group name:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to update group name',
+      });
     }
   };
 
@@ -211,7 +253,13 @@ export default function GroupSettingsScreen() {
                 <Text style={[styles.groupName, { color: colors.text }]}>{group.name}</Text>
                 <Text style={[styles.groupType, { color: colors.icon }]}>{capitalizeFirst(group.type)}</Text>
               </View>
-              <TouchableOpacity style={styles.editButton} onPress={() => router.push('/create-group')}>
+              <TouchableOpacity
+                style={styles.editButton}
+                onPress={() => {
+                  setEditedGroupName(group.name);
+                  setShowEditNameModal(true);
+                }}
+              >
                 <MaterialIcons name="edit" size={20} color={colors.icon} />
               </TouchableOpacity>
             </View>
@@ -293,6 +341,36 @@ export default function GroupSettingsScreen() {
             )}
           </View>
         </ScrollView>
+
+        {/* Edit Group Name Modal */}
+        <Modal
+          visible={showEditNameModal}
+          animationType="slide"
+          presentationStyle="pageSheet"
+          transparent={false}
+        >
+          <SafeAreaView style={[styles.modalContainer, { backgroundColor: colors.background }]} edges={['top', 'bottom']}>
+            <View style={[styles.modalHeader, { borderBottomColor: colors.border }]}>
+              <TouchableOpacity onPress={() => setShowEditNameModal(false)}>
+                <Text style={[styles.cancelButton, { color: colors.tint }]}>Cancel</Text>
+              </TouchableOpacity>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Edit Group Name</Text>
+              <TouchableOpacity onPress={handleSaveGroupName}>
+                <Text style={[styles.saveButton, { color: colors.tint }]}>Save</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.modalContent}>
+              <TextInput
+                style={[styles.input, { color: colors.text, borderColor: colors.border, backgroundColor: colors.background }]}
+                value={editedGroupName}
+                onChangeText={setEditedGroupName}
+                placeholder="Group name"
+                placeholderTextColor={colors.icon}
+                autoFocus
+              />
+            </View>
+          </SafeAreaView>
+        </Modal>
       </SafeAreaView>
     </TabLayoutWrapper>
   );
@@ -480,5 +558,40 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginLeft: 16,
     fontFamily: 'Poppins_500Medium',
+  },
+  modalContainer: {
+    flex: 1,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontFamily: 'Poppins_600SemiBold',
+  },
+  cancelButton: {
+    fontSize: 16,
+    fontFamily: 'Poppins_400Regular',
+  },
+  saveButton: {
+    fontSize: 16,
+    fontFamily: 'Poppins_600SemiBold',
+  },
+  modalContent: {
+    paddingHorizontal: 20,
+    paddingTop: 24,
+  },
+  input: {
+    fontSize: 16,
+    fontFamily: 'Poppins_400Regular',
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
 });

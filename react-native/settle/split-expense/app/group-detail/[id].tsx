@@ -174,15 +174,12 @@ export default function GroupDetailScreen() {
           </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.navButtonsScrollView} contentContainerStyle={styles.navButtonsContainer}>
               <TouchableOpacity style={[styles.navButton, { backgroundColor: colors.background, borderColor: colors.border }, activeTab === 'settle-up' && styles.activeNavButton]} onPress={() => setActiveTab('settle-up')}><Text style={[styles.navButtonText, { color: colors.text }, activeTab === 'settle-up' && styles.activeNavButtonText]}>Settle up</Text></TouchableOpacity>
-              <TouchableOpacity style={[styles.navButton, { backgroundColor: colors.background, borderColor: colors.border }, activeTab === 'charts' && styles.activeNavButton]} onPress={() => setActiveTab('charts')}><MaterialIcons name="diamond" size={20} color="#8B5CF6" /><Text style={[styles.navButtonText, { color: colors.text }, activeTab === 'charts' && styles.activeNavButtonText]}>Charts</Text></TouchableOpacity>
                             <TouchableOpacity
                               style={[styles.navButton, { backgroundColor: colors.background, borderColor: colors.border }, activeTab === 'balances' && styles.activeNavButton]}
                               onPress={() => router.push({ pathname: '/balances', params: { groupId: id } })}
                             ><Text style={[styles.navButtonText, { color: colors.text }, activeTab === 'balances' && styles.activeNavButtonText]}>Balances</Text></TouchableOpacity>
             </ScrollView>
           {activeTab === 'settle-up' && renderSettleUpContent()}
-          {activeTab === 'charts' && (<View style={styles.mainBody}><Text style={[styles.title, { color: colors.text }]}>Charts</Text><Text style={[styles.subtitle, { color: colors.icon }]}>Charts content coming soon</Text></View>)}
-          {!['settle-up', 'charts'].includes(activeTab) && (<View style={styles.mainBody}><Text style={[styles.title, { color: colors.text }]}>You are all settled up</Text><Text style={[styles.subtitle, { color: colors.icon }]}>Tap to show settled expenses</Text><View style={styles.checkmarkContainer}><View style={[styles.checkmarkPart, styles.checkmarkPart1]} /><View style={[styles.checkmarkPart, styles.checkmarkPart2]} /><View style={[styles.checkmarkPart, styles.checkmarkPart3]} /><View style={[styles.checkmarkPart, styles.checkmarkPart4]} /><View style={[styles.checkmarkPart, styles.checkmarkPart5]} /></View></View>)}
         </ScrollView>
                 <FabButtons
                   onAddExpensePress={() => router.push({ pathname: '/add-expense', params: { groupId: id } })}
@@ -229,14 +226,4 @@ const styles = StyleSheet.create({
    settledMessage: { alignItems: 'center', paddingVertical: 16, marginTop: 16 },
    settledText: { fontSize: 14, fontFamily: 'Montserrat_400Regular', textAlign: 'center', marginBottom: 8 },
    tapToShowText: { fontSize: 14, fontFamily: 'Montserrat_500Medium' },
-  mainBody: { alignItems: 'center', marginTop: 32 },
-  title: { fontSize: 20, fontWeight: '600', fontFamily: 'Poppins_600SemiBold' },
-  subtitle: { fontSize: 14, marginTop: 4, marginBottom: 24, fontFamily: 'Montserrat_400Regular' },
-  checkmarkContainer: { width: 100, height: 100, position: 'relative', marginTop: 16 },
-  checkmarkPart: { position: 'absolute' },
-  checkmarkPart1: { top: 20, left: 30, width: 40, height: 60, backgroundColor: '#8B5CF6', transform: [{ rotate: '45deg' }] },
-  checkmarkPart2: { top: 40, left: 50, width: 30, height: 40, backgroundColor: '#7C3AED', transform: [{ rotate: '45deg' }] },
-  checkmarkPart3: { top: 60, left: 70, width: 20, height: 30, backgroundColor: '#6D28D9', transform: [{ rotate: '45deg' }] },
-  checkmarkPart4: { top: 10, left: 40, width: 25, height: 35, backgroundColor: '#A855F7', transform: [{ rotate: '45deg' }] },
-  checkmarkPart5: { top: 30, left: 60, width: 35, height: 25, backgroundColor: '#9333EA', transform: [{ rotate: '45deg' }] },
 });
