@@ -35,7 +35,8 @@ export default function FriendsScreen() {
   const [showAddFriend, setShowAddFriend] = useState(false);
   const [friendEmail, setFriendEmail] = useState('');
   const [friendName, setFriendName] = useState('');
-  const [showSearchModal, setShowSearchModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearchBar, setShowSearchBar] = useState(false);
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'outstanding' | 'owe' | 'owed'>('all');
 
@@ -132,13 +133,43 @@ export default function FriendsScreen() {
     setFriendEmail('');
   };
 
+  // Filter friends based on search query and selected filter
+  const filteredFriends = friends.filter(friend => {
+    // Apply search filter
+    const matchesSearch = searchQuery.trim() === '' ||
+      friend.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      friend.phone?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      friend.pubkey?.toLowerCase().includes(searchQuery.toLowerCase());
+
+    if (!matchesSearch) return false;
+
+    // Apply balance filter
+    if (selectedFilter === 'all') {
+      return true;
+    } else if (selectedFilter === 'outstanding') {
+      return friend.status !== 'no expenses';
+    } else if (selectedFilter === 'owe') {
+      return friend.status?.includes('you owe');
+    } else if (selectedFilter === 'owed') {
+      return friend.status?.includes('owes you');
+    }
+    return true;
+  });
+
+  const getFriendColor = (friendId: string) => {
+    // Generate consistent color based on friend ID
+    const colors = ['#10B981', '#7C3AED', '#F59E0B', '#EF4444', '#3B82F6', '#EC4899'];
+    const index = friendId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % colors.length;
+    return colors[index];
+  };
+
   const renderFriendCard = (friend: Friend) => (
     <TouchableOpacity
       key={friend.id}
       style={[styles.friendCard, { borderBottomColor: colors.border }]}
     >
-      <View style={[styles.friendAvatar, { backgroundColor: colors.border }]}>
-        <MaterialIcons name="person" size={24} color={colors.icon} />
+      <View style={[styles.friendTile, { backgroundColor: getFriendColor(friend.id) }]}>
+        <MaterialIcons name="person" size={28} color="#FFFFFF" />
       </View>
       <View style={styles.friendInfo}>
         <Text style={[styles.friendName, { color: colors.text }]}>{friend.name}</Text>
@@ -153,8 +184,16 @@ export default function FriendsScreen() {
         <View style={styles.header}>
           <View style={styles.headerLeft} />
           <View style={styles.headerRight}>
-            <TouchableOpacity style={styles.searchButton} onPress={() => setShowSearchModal(true)}>
-              <MaterialIcons name="search" size={24} color={colors.text} />
+            <TouchableOpacity
+              style={styles.searchButton}
+              onPress={() => {
+                setShowSearchBar(!showSearchBar);
+                if (showSearchBar) {
+                  setSearchQuery('');
+                }
+              }}
+            >
+              <MaterialIcons name={showSearchBar ? "close" : "search"} size={24} color={colors.text} />
             </TouchableOpacity>
             <TouchableOpacity style={styles.addPersonButton} onPress={() => router.push('/add-friends')}>
               <MaterialCommunityIcons name="account-plus" size={24} color={colors.text} />
@@ -162,13 +201,33 @@ export default function FriendsScreen() {
           </View>
         </View>
 
-        <ScrollView 
-          style={styles.content} 
+        <ScrollView
+          style={styles.content}
           showsVerticalScrollIndicator={false}
           showsHorizontalScrollIndicator={false}
           horizontal={false}
           nestedScrollEnabled={true}
         >
+          {/* Inline Search Bar */}
+          {showSearchBar && (
+            <View style={[styles.inlineSearchContainer, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
+              <MaterialIcons name="search" size={20} color={colors.icon} />
+              <TextInput
+                style={[styles.inlineSearchInput, { color: colors.text }]}
+                placeholder="Search friends..."
+                placeholderTextColor={colors.icon}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                autoFocus
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setSearchQuery('')}>
+                  <MaterialIcons name="clear" size={20} color={colors.icon} />
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+
           <View style={styles.settledUpHeader}>
             <Text style={[styles.settledUpText, { color: colors.text }]}>
               {overallBalance.youOwe === 0 && overallBalance.youAreOwed === 0
@@ -183,7 +242,19 @@ export default function FriendsScreen() {
           </View>
 
           <View style={styles.friendsList}>
-            {friends.map(renderFriendCard)}
+            {filteredFriends.length > 0 ? (
+              filteredFriends.map(renderFriendCard)
+            ) : (
+              <View style={{ alignItems: 'center', paddingVertical: 40 }}>
+                <MaterialIcons name="person-search" size={48} color={colors.icon} />
+                <Text style={[styles.emptySearchText, { color: colors.text, marginTop: 16 }]}>
+                  {searchQuery.trim() ? 'No friends found' : 'No friends match this filter'}
+                </Text>
+                <Text style={[styles.emptySearchSubtext, { color: colors.icon }]}>
+                  {searchQuery.trim() ? 'Try a different search term' : 'Try a different filter'}
+                </Text>
+              </View>
+            )}
           </View>
 
           <TouchableOpacity style={[styles.addMoreFriendsButton, { borderColor: colors.success }]} onPress={() => router.push('/add-friends')}>
@@ -317,55 +388,6 @@ export default function FriendsScreen() {
         </SafeAreaView>
       </Modal>
 
-      {/* Search Modal (centered) */}
-      <Modal
-        visible={showSearchModal}
-        animationType="fade"
-        transparent={true}
-        onRequestClose={() => setShowSearchModal(false)}
-      >
-        <View style={styles.searchModalOverlay}>
-          <View style={[styles.searchModalContainer, { backgroundColor: colors.cardBackground }]}>
-            <View style={[styles.searchModalHeader, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.searchModalTitle, { color: colors.text }]}>Search</Text>
-              <TouchableOpacity onPress={() => setShowSearchModal(false)}>
-                <MaterialIcons name="close" size={24} color={colors.icon} />
-              </TouchableOpacity>
-            </View>
-            <View style={[styles.searchInputContainer, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
-              <MaterialIcons name="search" size={20} color={colors.icon} />
-              <TextInput
-                style={[styles.searchInput, { color: colors.text }]}
-                placeholder="Search friends..."
-                placeholderTextColor={colors.icon}
-                value={friendName}
-                onChangeText={setFriendName}
-                autoFocus
-              />
-              {friendName.length > 0 && (
-                <TouchableOpacity onPress={() => setFriendName('')}>
-                  <MaterialIcons name="clear" size={20} color={colors.icon} />
-                </TouchableOpacity>
-              )}
-            </View>
-            <ScrollView style={{ maxHeight: 320 }}>
-              {friends
-                .filter(f => f.name.toLowerCase().includes(friendName.toLowerCase()))
-                .map(f => (
-                  <View key={f.id} style={styles.searchResultItem}>
-                    <View style={[styles.friendAvatar, { backgroundColor: colors.border }]}>
-                      <MaterialIcons name="person" size={20} color={colors.icon} />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.friendName, { color: colors.text }]}>{f.name}</Text>
-                      <Text style={[styles.friendStatus, { color: colors.icon }]}>{f.email}</Text>
-                    </View>
-                  </View>
-                ))}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
       </SafeAreaView>
     </TabLayoutWrapper>
   );
@@ -405,6 +427,30 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
   },
+  inlineSearchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+  },
+  inlineSearchInput: {
+    flex: 1,
+    fontSize: 16,
+    fontFamily: 'Poppins_400Regular',
+  },
+  emptySearchText: {
+    fontSize: 16,
+    fontFamily: 'Poppins_500Medium',
+  },
+  emptySearchSubtext: {
+    fontSize: 14,
+    fontFamily: 'Montserrat_400Regular',
+    marginTop: 4,
+  },
   settledUpHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -412,8 +458,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   settledUpText: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 18,
+    fontFamily: 'Montserrat_600SemiBold',
   },
   filterButton: {
     width: 44,
@@ -428,14 +474,21 @@ const styles = StyleSheet.create({
   friendCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 4,
-    borderBottomWidth: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 0,
+  },
+  friendTile: {
+    width: 56,
+    height: 56,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
   },
   friendAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -445,24 +498,26 @@ const styles = StyleSheet.create({
   },
   friendName: {
     fontSize: 16,
-    fontWeight: '600',
+    marginBottom: 2,
+    fontFamily: 'Poppins_600SemiBold',
   },
   friendStatus: {
     fontSize: 14,
+    fontFamily: 'Montserrat_400Regular',
   },
   addMoreFriendsButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
     borderWidth: 2,
     gap: 8,
   },
   addMoreFriendsText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Poppins_600SemiBold',
   },
   modalContainer: {
     flex: 1,
@@ -514,56 +569,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     flex: 1,
     lineHeight: 20,
-  },
-  searchModalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-  },
-  searchModalContainer: {
-    borderRadius: 20,
-    width: '100%',
-    maxWidth: 400,
-    maxHeight: '80%',
-    shadowColor: '#000',
-    shadowOpacity: 0.25,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 10,
-  },
-  searchModalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-  },
-  searchModalTitle: {
-    fontSize: 20,
-    fontFamily: 'Montserrat_600SemiBold',
-  },
-  searchInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 12,
-    margin: 20,
-    borderWidth: 1,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-  },
-  searchResultItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
   },
   // Filter popup styles
   filterPopupOverlay: {

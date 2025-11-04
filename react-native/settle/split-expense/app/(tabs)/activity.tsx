@@ -11,7 +11,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
     ActivityIndicator,
     Image,
-    Modal,
     ScrollView,
     StyleSheet,
     Text,
@@ -48,7 +47,7 @@ export default function ActivityScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
-  const [showSearchModal, setShowSearchModal] = useState(false);
+  const [showSearchBar, setShowSearchBar] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activities, setActivities] = useState<Activity[]>([]);
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -237,9 +236,14 @@ export default function ActivityScreen() {
           <Text style={[styles.title, { color: colors.text }]}>Activity</Text>
           <TouchableOpacity
             style={styles.searchBtn}
-            onPress={() => setShowSearchModal(true)}
+            onPress={() => {
+              setShowSearchBar(!showSearchBar);
+              if (showSearchBar) {
+                setSearchQuery('');
+              }
+            }}
           >
-            <MaterialIcons name="search" size={24} color={colors.text} />
+            <MaterialIcons name={showSearchBar ? "close" : "search"} size={24} color={colors.text} />
           </TouchableOpacity>
         </View>
 
@@ -247,51 +251,12 @@ export default function ActivityScreen() {
           style={styles.content}
           showsVerticalScrollIndicator={false}
         >
-          {filteredActivities.length > 0 ? (
-            filteredActivities.map(renderActivityItem)
-          ) : (
-            <View style={styles.emptyContainer}>
-              <MaterialIcons name="history" size={64} color={colors.icon} />
-              <Text style={[styles.emptyText, { color: colors.text }]}>No activity yet</Text>
-              <Text style={[styles.emptySubtext, { color: colors.icon }]}>
-                Your group and expense activity will appear here
-              </Text>
-            </View>
-          )}
-        </ScrollView>
-
-        <FabButtons
-          onAddExpensePress={() => router.push('/add-expense')}
-          isTabScreen={true}
-        />
-      </SafeAreaView>
-
-      {/* Search Modal */}
-      <Modal
-        visible={showSearchModal}
-        animationType="fade"
-        transparent={true}
-        onRequestClose={() => {
-          setShowSearchModal(false);
-          setSearchQuery('');
-        }}
-      >
-        <View style={styles.searchModalOverlay}>
-          <View style={[styles.searchModalContainer, { backgroundColor: colors.cardBackground }]}>
-            <View style={[styles.searchModalHeader, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.searchModalTitle, { color: colors.text }]}>Search Activity</Text>
-              <TouchableOpacity onPress={() => {
-                setShowSearchModal(false);
-                setSearchQuery('');
-              }}>
-                <MaterialIcons name="close" size={24} color={colors.icon} />
-              </TouchableOpacity>
-            </View>
-
-            <View style={[styles.searchInputContainer, { backgroundColor: colors.cardBackground }]}>
+          {/* Inline Search Bar */}
+          {showSearchBar && (
+            <View style={[styles.inlineSearchContainer, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
               <MaterialIcons name="search" size={20} color={colors.icon} />
               <TextInput
-                style={[styles.searchInput, { color: colors.text }]}
+                style={[styles.inlineSearchInput, { color: colors.text }]}
                 placeholder="Search activity..."
                 placeholderTextColor={colors.icon}
                 value={searchQuery}
@@ -304,30 +269,28 @@ export default function ActivityScreen() {
                 </TouchableOpacity>
               )}
             </View>
+          )}
 
-            <ScrollView style={styles.searchResults}>
-              {filteredActivities.length > 0 ? (
-                filteredActivities.map(activity => (
-                  <TouchableOpacity
-                    key={activity.id}
-                    style={styles.searchResultItem}
-                    onPress={() => {
-                      setShowSearchModal(false);
-                      setSearchQuery('');
-                    }}
-                  >
-                    {renderActivityItem(activity)}
-                  </TouchableOpacity>
-                ))
-              ) : (
-                <View style={styles.noResultsContainer}>
-                  <Text style={[styles.noResultsText, { color: colors.icon }]}>No activities found</Text>
-                </View>
-              )}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
+          {filteredActivities.length > 0 ? (
+            filteredActivities.map(renderActivityItem)
+          ) : (
+            <View style={styles.emptyContainer}>
+              <MaterialIcons name={searchQuery.trim() ? "search-off" : "history"} size={64} color={colors.icon} />
+              <Text style={[styles.emptyText, { color: colors.text }]}>
+                {searchQuery.trim() ? 'No activity found' : 'No activity yet'}
+              </Text>
+              <Text style={[styles.emptySubtext, { color: colors.icon }]}>
+                {searchQuery.trim() ? 'Try a different search term' : 'Your group and expense activity will appear here'}
+              </Text>
+            </View>
+          )}
+        </ScrollView>
+
+        <FabButtons
+          onAddExpensePress={() => router.push('/add-expense')}
+          isTabScreen={true}
+        />
+      </SafeAreaView>
     </TabLayoutWrapper>
   );
 }
@@ -383,6 +346,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 16,
   },
+  inlineSearchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+  },
+  inlineSearchInput: {
+    flex: 1,
+    fontSize: 16,
+    fontFamily: 'Poppins_400Regular',
+  },
   row: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -428,61 +406,5 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontSize: 12,
     fontFamily: 'Montserrat_400Regular',
-  },
-  searchModalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  searchModalContainer: {
-    width: '90%',
-    maxWidth: 500,
-    borderRadius: 16,
-    maxHeight: '80%',
-    paddingBottom: 20,
-  },
-  searchModalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-  },
-  searchModalTitle: {
-    fontSize: 18,
-    fontFamily: 'Montserrat_600SemiBold',
-  },
-  searchInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginHorizontal: 20,
-    marginTop: 16,
-    borderRadius: 12,
-    gap: 12,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    fontFamily: 'Poppins_400Regular',
-  },
-  searchResults: {
-    maxHeight: 400,
-    marginTop: 16,
-    paddingHorizontal: 20,
-  },
-  searchResultItem: {
-    paddingVertical: 8,
-  },
-  noResultsContainer: {
-    paddingVertical: 40,
-    alignItems: 'center',
-  },
-  noResultsText: {
-    fontSize: 16,
-    fontFamily: 'Poppins_400Regular',
   },
 });

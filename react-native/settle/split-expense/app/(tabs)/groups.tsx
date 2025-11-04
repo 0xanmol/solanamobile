@@ -10,6 +10,7 @@ import { getGroups, Group as APIGroup } from '@/apis/groups';
 import { getBalances, Balance } from '@/apis/balances';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
+  ActivityIndicator,
   Modal,
   ScrollView,
   StyleSheet,
@@ -44,7 +45,7 @@ const getGroupIcon = (type: string) => {
 export default function GroupsScreen() {
   const router = useRouter();
   const [showCreateGroup, setShowCreateGroup] = useState(false);
-  const [showSearchModal, setShowSearchModal] = useState(false);
+  const [showSearchBar, setShowSearchBar] = useState(false);
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'outstanding' | 'owe' | 'owed'>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -148,8 +149,15 @@ export default function GroupsScreen() {
     }, [])
   );
 
-  // Filter groups based on selected filter
+  // Filter groups based on search query and selected filter
   const displayedGroups = groups.filter(group => {
+    // Apply search filter
+    const matchesSearch = searchQuery.trim() === '' ||
+      group.name.toLowerCase().includes(searchQuery.toLowerCase());
+
+    if (!matchesSearch) return false;
+
+    // Apply balance filter
     if (selectedFilter === 'all') {
       return true;
     } else if (selectedFilter === 'outstanding') {
@@ -164,16 +172,6 @@ export default function GroupsScreen() {
     }
     return true;
   });
-
-  // Filter search results
-  const filteredGroups = allGroups.filter(group =>
-    group.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const filteredUsers = allUsers.filter(user =>
-    user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   const groupTypes = [
     { key: 'trip', label: 'Trip', icon: 'flight' },
@@ -214,8 +212,16 @@ export default function GroupsScreen() {
         <View style={styles.header}>
           <View style={styles.headerLeft} />
           <View style={styles.headerRight}>
-            <TouchableOpacity style={styles.searchButton} onPress={() => setShowSearchModal(true)}>
-              <MaterialIcons name="search" size={24} color={colors.text} />
+            <TouchableOpacity
+              style={styles.searchButton}
+              onPress={() => {
+                setShowSearchBar(!showSearchBar);
+                if (showSearchBar) {
+                  setSearchQuery('');
+                }
+              }}
+            >
+              <MaterialIcons name={showSearchBar ? "close" : "search"} size={24} color={colors.text} />
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.addGroupButton}
@@ -226,10 +232,30 @@ export default function GroupsScreen() {
           </View>
         </View>
 
-        <ScrollView 
-          style={styles.content} 
+        <ScrollView
+          style={styles.content}
           showsVerticalScrollIndicator={false}
         >
+          {/* Inline Search Bar */}
+          {showSearchBar && (
+            <View style={[styles.inlineSearchContainer, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
+              <MaterialIcons name="search" size={20} color={colors.icon} />
+              <TextInput
+                style={[styles.inlineSearchInput, { color: colors.text }]}
+                placeholder="Search groups..."
+                placeholderTextColor={colors.icon}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                autoFocus
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setSearchQuery('')}>
+                  <MaterialIcons name="clear" size={20} color={colors.icon} />
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+
           <View style={styles.settledUpHeader}>
             <Text style={[styles.settledUpText, { color: colors.text }]}>
               {overallBalance.youOwe === 0 && overallBalance.youAreOwed === 0
@@ -248,9 +274,11 @@ export default function GroupsScreen() {
               displayedGroups.map(renderGroupCard)
             ) : (
               <View style={{ alignItems: 'center', paddingVertical: 40 }}>
-                <MaterialIcons name="filter-list-off" size={48} color={colors.icon} />
+                <MaterialIcons name={searchQuery.trim() ? "search-off" : "filter-list-off"} size={48} color={colors.icon} />
                 <Text style={[styles.emptySearchText, { color: colors.text, marginTop: 16 }]}>No groups found</Text>
-                <Text style={[styles.emptySearchSubtext, { color: colors.icon }]}>Try a different filter</Text>
+                <Text style={[styles.emptySearchSubtext, { color: colors.icon }]}>
+                  {searchQuery.trim() ? 'Try a different search term' : 'Try a different filter'}
+                </Text>
               </View>
             )}
           </View>
@@ -269,101 +297,6 @@ export default function GroupsScreen() {
           isTabScreen={true}
         />
       </SafeAreaView>
-
-      {/* Search Modal */}
-      <Modal
-        visible={showSearchModal}
-        animationType="fade"
-        transparent={true}
-        onRequestClose={() => setShowSearchModal(false)}
-      >
-        <View style={styles.searchModalOverlay}>
-          <View style={[styles.searchModalContainer, { backgroundColor: colors.background }]}>
-            <View style={[styles.searchModalHeader, { borderBottomColor: colors.border }]}>
-              <Text style={[styles.searchModalTitle, { color: colors.text }]}>Search</Text>
-              <TouchableOpacity onPress={() => setShowSearchModal(false)}>
-                <MaterialIcons name="close" size={24} color={colors.icon} />
-              </TouchableOpacity>
-            </View>
-
-            <View style={[styles.searchInputContainer, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
-              <MaterialIcons name="search" size={20} color={colors.icon} />
-              <TextInput
-                style={[styles.searchInput, { color: colors.text }]}
-                placeholder="Search groups and users..."
-                placeholderTextColor={colors.icon}
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                autoFocus
-              />
-              {searchQuery.length > 0 && (
-                <TouchableOpacity onPress={() => setSearchQuery('')}>
-                  <MaterialIcons name="clear" size={20} color={colors.icon} />
-                </TouchableOpacity>
-              )}
-            </View>
-
-            <ScrollView style={styles.searchResults} showsVerticalScrollIndicator={false}>
-              {searchQuery.length > 0 ? (
-                <>
-                  {/* Groups Section */}
-                  {filteredGroups.length > 0 && (
-                    <View style={styles.searchSection}>
-                      <Text style={[styles.searchSectionTitle, { color: colors.text }]}>Groups</Text>
-                      {filteredGroups.map((group) => (
-                        <TouchableOpacity key={group.id} style={[styles.searchResultItem, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
-                          <View style={styles.searchResultIcon}>
-                            <MaterialCommunityIcons name="account-group" size={20} color="#FFFFFF" />
-                          </View>
-                          <View style={styles.searchResultContent}>
-                            <Text style={[styles.searchResultName, { color: colors.text }]}>{group.name}</Text>
-                            <Text style={[styles.searchResultSubtitle, { color: colors.icon }]}>
-                              {group.type.charAt(0).toUpperCase() + group.type.slice(1)} Group
-                            </Text>
-                          </View>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  )}
-
-                  {/* Users Section */}
-                  {filteredUsers.length > 0 && (
-                    <View style={styles.searchSection}>
-                      <Text style={[styles.searchSectionTitle, { color: colors.text }]}>Users</Text>
-                      {filteredUsers.map((user) => (
-                        <TouchableOpacity key={user.id} style={[styles.searchResultItem, { backgroundColor: colors.cardBackground, borderColor: colors.border }]}>
-                          <View style={styles.searchResultIcon}>
-                            <MaterialIcons name="person" size={20} color="#FFFFFF" />
-                          </View>
-                          <View style={styles.searchResultContent}>
-                            <Text style={[styles.searchResultName, { color: colors.text }]}>{user.name}</Text>
-                            <Text style={[styles.searchResultSubtitle, { color: colors.icon }]}>{user.email}</Text>
-                          </View>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  )}
-
-                  {/* No Results */}
-                  {filteredGroups.length === 0 && filteredUsers.length === 0 && (
-                    <View style={styles.noResultsContainer}>
-                      <MaterialIcons name="search-off" size={40} color={colors.tabIconDefault} />
-                      <Text style={[styles.noResultsText, { color: colors.icon }]}>No results found</Text>
-                      <Text style={[styles.noResultsSubtext, { color: colors.tabIconDefault }]}>Try different keywords</Text>
-                    </View>
-                  )}
-                </>
-              ) : (
-                <View style={styles.emptySearchContainer}>
-                  <MaterialIcons name="search" size={40} color={colors.tabIconDefault} />
-                  <Text style={[styles.emptySearchText, { color: colors.icon }]}>Search for groups and users</Text>
-                  <Text style={[styles.emptySearchSubtext, { color: colors.tabIconDefault }]}>Start typing to see results</Text>
-                </View>
-              )}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
 
       {/* Filter Popup */}
       {showFilterModal && (
@@ -637,6 +570,21 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 16,
   },
+  inlineSearchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+  },
+  inlineSearchInput: {
+    flex: 1,
+    fontSize: 16,
+    fontFamily: 'Poppins_400Regular',
+  },
   settledUpHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -772,117 +720,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
-  // Search Modal Styles
-  searchModalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-  },
-  searchModalContainer: {
-    borderRadius: 20,
-    width: '100%',
-    maxWidth: 400,
-    maxHeight: '80%',
-    shadowColor: '#000',
-    shadowOpacity: 0.25,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 10,
-  },
-  searchModalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-  },
-  searchModalTitle: {
-    fontSize: 20,
-    fontFamily: 'Montserrat_600SemiBold',
-  },
-  searchInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 12,
-    margin: 20,
-    borderWidth: 1,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-  },
-  searchResults: {
-    maxHeight: 400,
-    paddingHorizontal: 20,
-  },
-  searchSection: {
-    marginBottom: 20,
-  },
-  searchSectionTitle: {
-    fontSize: 16,
-    marginBottom: 12,
-    fontFamily: 'Montserrat_600SemiBold',
-  },
-  searchResultItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    marginBottom: 8,
-    borderWidth: 1,
-  },
-  searchResultIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#7C3AED',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  searchResultContent: {
-    flex: 1,
-  },
-  searchResultName: {
-    fontSize: 16,
-    marginBottom: 2,
-    fontFamily: 'Poppins_500Medium',
-  },
-  searchResultSubtitle: {
-    fontSize: 14,
-    fontFamily: 'Montserrat_400Regular',
-  },
-  noResultsContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 40,
-  },
-  noResultsText: {
-    fontSize: 16,
-    marginTop: 12,
-    marginBottom: 4,
-    fontFamily: 'Poppins_500Medium',
-  },
-  noResultsSubtext: {
-    fontSize: 14,
-    fontFamily: 'Montserrat_400Regular',
-  },
-  emptySearchContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 60,
-  },
   emptySearchText: {
     fontSize: 16,
-    marginTop: 12,
-    marginBottom: 4,
     fontFamily: 'Poppins_500Medium',
   },
   emptySearchSubtext: {
