@@ -80,17 +80,17 @@ const calculateBalances = async (userId, groupId = null) => {
   // Adjust balances based on settlements
   for (const settlement of settlements) {
     if (settlement.from_user_id === userId) {
-      // User paid someone
+      // User paid someone - increases their balance (reduces what you owe or what they owe you)
       if (!balances[settlement.to_user_id]) {
         balances[settlement.to_user_id] = 0;
       }
-      balances[settlement.to_user_id] -= settlement.amount;
+      balances[settlement.to_user_id] += settlement.amount;
     } else if (settlement.to_user_id === userId) {
-      // User received payment
+      // User received payment - decreases their balance (reduces what they owe you)
       if (!balances[settlement.from_user_id]) {
         balances[settlement.from_user_id] = 0;
       }
-      balances[settlement.from_user_id] += settlement.amount;
+      balances[settlement.from_user_id] -= settlement.amount;
     }
   }
 

@@ -25,8 +25,12 @@ export default function BalancesScreen() {
       const userJson = await AsyncStorage.getItem('user_data');
       setCurrentUser(userJson ? JSON.parse(userJson) : null);
 
+      console.log('📊 Fetching balances for groupId:', groupId);
       const response = await getBalances(groupId as string | undefined);
+      console.log('📊 Balances API response:', JSON.stringify(response, null, 2));
+
       if (response.success) {
+        console.log('📊 Setting balances:', response.data.length, 'items');
         setBalances(response.data);
         // Expand the first 'owes' type by default if it exists
         const firstOwes = response.data.find(b => b.type === 'owes');
@@ -93,6 +97,7 @@ export default function BalancesScreen() {
         from: debtorId,
         to: creditorId,
         amount,
+        groupId: groupId as string | undefined,
         // TODO: Update backend to accept transaction signature
         // transactionSignature: txResult.signature
       };
@@ -160,23 +165,26 @@ export default function BalancesScreen() {
             </Text>
           )}
         </View>
-        <TouchableOpacity
-          style={[newStyles.settleButton, isSettling && newStyles.settleButtonDisabled]}
-          onPress={() => handleSettleUp(
-            isOwedToYou ? balance.userId : currentUser.id,
-            isOwedToYou ? currentUser.id : balance.userId,
-            balance.amount,
-            balance.userPubkey,
-            balance.id
-          )}
-          disabled={isSettling || settlingId !== null}
-        >
-          {isSettling ? (
-            <ActivityIndicator size="small" color="#FFFFFF" />
-          ) : (
-            <Text style={newStyles.settleButtonText}>Settle up</Text>
-          )}
-        </TouchableOpacity>
+        {/* Only show settle button when YOU owe someone */}
+        {!isOwedToYou && (
+          <TouchableOpacity
+            style={[newStyles.settleButton, isSettling && newStyles.settleButtonDisabled]}
+            onPress={() => handleSettleUp(
+              currentUser.id,      // debtor (you)
+              balance.userId,      // creditor (person you owe)
+              balance.amount,
+              balance.userPubkey,  // recipient pubkey
+              balance.id
+            )}
+            disabled={isSettling || settlingId !== null}
+          >
+            {isSettling ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Text style={newStyles.settleButtonText}>Settle up</Text>
+            )}
+          </TouchableOpacity>
+        )}
       </View>
     );
   };
