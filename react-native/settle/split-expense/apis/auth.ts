@@ -66,6 +66,12 @@ export const connectWallet = async (pubkey: string): Promise<AuthResponse> => {
 export const completeProfile = async (data: CompleteProfileData): Promise<AuthResponse> => {
   try {
     const response = await apiClient.post('/auth/complete-profile', data);
+
+    // Store updated user data after profile completion
+    if (response.data.success && response.data.data?.user) {
+      await AsyncStorage.setItem('user_data', JSON.stringify(response.data.data.user));
+    }
+
     return response.data;
   } catch (error: any) {
     console.error('[API] Complete profile error:', error.response?.data || error.message);
