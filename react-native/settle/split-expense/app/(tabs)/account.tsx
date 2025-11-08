@@ -13,10 +13,9 @@ import {
   Switch,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { logout, getStoredWalletAuth } from "@/apis/auth";
-import { disconnectWallet } from "@/services/wallet";
+import { logout } from "@/apis/auth";
+import { useAuthorization, useTheme } from "@/components/providers";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useTheme } from "@/contexts/ThemeContext";
 import { Colors } from "@/constants/theme";
 
 interface UserData {
@@ -28,10 +27,10 @@ interface UserData {
 
 export default function AccountScreen() {
   const { colorScheme, themeMode, setThemeMode, isDark } = useTheme();
+  const { authorization, deauthorizeSession } = useAuthorization();
   const colors = Colors[colorScheme ?? 'light'];
   const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState<UserData | null>(null);
-  const [walletPubkey, setWalletPubkey] = useState<string | null>(null);
 
   useEffect(() => {
     fetchUserData();
@@ -43,12 +42,6 @@ export default function AccountScreen() {
       const userJson = await AsyncStorage.getItem('user_data');
       if (userJson) {
         setUserData(JSON.parse(userJson));
-      }
-
-      // Get wallet pubkey
-      const walletAuth = await getStoredWalletAuth();
-      if (walletAuth) {
-        setWalletPubkey(walletAuth.address);
       }
     } catch (error) {
       console.error('Error fetching user data:', error);
@@ -65,12 +58,8 @@ export default function AccountScreen() {
         style: "destructive",
         onPress: async () => {
           try {
-            // Get stored wallet auth to disconnect
-            const cachedAuth = await getStoredWalletAuth();
-            if (cachedAuth) {
-              // Disconnect wallet (deauthorize)
-              await disconnectWallet(cachedAuth.authToken);
-            }
+            // Deauthorize wallet session
+            await deauthorizeSession();
 
             // Logout from backend and clear all local data
             await logout();
@@ -135,7 +124,7 @@ export default function AccountScreen() {
               <View style={styles.infoTextContainer}>
                 <Text style={[styles.infoLabel, { color: colors.icon }]}>Wallet Address</Text>
                 <Text style={[styles.pubkeyValue, { color: colors.text }]} numberOfLines={1} ellipsizeMode="middle">
-                  {walletPubkey || 'Not connected'}
+                  {authorization?.selectedAccount?.address || 'Not connected'}
                 </Text>
               </View>
             </View>

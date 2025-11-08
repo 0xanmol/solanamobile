@@ -36,7 +36,9 @@ export interface CreateGroupData {
  */
 export const getGroups = async (): Promise<{ success: boolean, data?: Group[] } | { success: false, message: string }> => {
   try {
-    const response = await apiClient.get('/groups');
+    // Add timestamp to prevent caching issues
+    const timestamp = Date.now();
+    const response = await apiClient.get(`/groups?t=${timestamp}`);
     return response.data;
   } catch (error: any) {
     console.error('Error fetching groups:', error);

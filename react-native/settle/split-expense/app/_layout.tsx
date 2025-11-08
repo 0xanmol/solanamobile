@@ -9,9 +9,12 @@ import { StatusBar } from 'expo-status-bar';
 import { Text as RNText, TextInput as RNTextInput } from 'react-native';
 import 'react-native-reanimated';
 
-import { ThemeProvider } from '@/contexts/ThemeContext';
+import { ConnectionProvider, AuthorizationProvider, ThemeProvider } from '@/components/providers';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import Toast from 'react-native-toast-message';
+
+// Solana RPC endpoint
+const SOLANA_RPC_ENDPOINT = 'https://api.devnet.solana.com';
 
 export const unstable_settings = {
   anchor: 'login',
@@ -61,8 +64,15 @@ export default function RootLayout() {
   RNTextInput.defaultProps.style = [RNTextInput.defaultProps.style, { fontFamily: 'Poppins_400Regular' }];
 
   return (
-    <ThemeProvider>
-      <RootLayoutInner />
-    </ThemeProvider>
+    <ConnectionProvider
+      endpoint={SOLANA_RPC_ENDPOINT}
+      config={{ commitment: 'confirmed' }}
+    >
+      <AuthorizationProvider>
+        <ThemeProvider>
+          <RootLayoutInner />
+        </ThemeProvider>
+      </AuthorizationProvider>
+    </ConnectionProvider>
   );
 }

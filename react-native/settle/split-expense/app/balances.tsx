@@ -8,7 +8,10 @@ import { ScrollView, StyleSheet, Text, TouchableOpacity, View, ActivityIndicator
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getBalances, settleUp, Balance } from '@/apis/balances';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { sendSol } from '@/services/transaction';
+import { getSolToUsdRate, convertUsdToSol } from '@/solana/transaction';
+import { useConnection, useAuthorization } from '@/components/providers';
+import { useMWAWallet } from '@/components/hooks';
+import { Transaction, SystemProgram, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import Toast from 'react-native-toast-message';
 
 export default function BalancesScreen() {
@@ -16,6 +19,12 @@ export default function BalancesScreen() {
   const { groupId } = useLocalSearchParams();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme ?? 'light'];
+
+  // Solana hooks
+  const connection = useConnection();
+  const wallet = useMWAWallet();
+  const { authorization } = useAuthorization();
+
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [balances, setBalances] = useState<Balance[]>([]);
   const [loading, setLoading] = useState(true);
@@ -85,32 +94,76 @@ export default function BalancesScreen() {
       return;
     }
 
+    // Check wallet connection
+    if (!wallet || !authorization) {
+      Toast.show({
+        type: 'error',
+        text1: 'Wallet Not Connected',
+        text2: 'Please reconnect your wallet and try again',
+        visibilityTime: 4000,
+      });
+      return;
+    }
+
     setSettlingId(balanceId);
 
     try {
-      // Step 1: Send SOL transaction
-      console.log('Sending SOL transaction...', { recipientPubkey, amount });
-      const txResult = await sendSol(recipientPubkey, amount);
-
-      if (!txResult.success) {
-        Toast.show({
-          type: 'error',
-          text1: 'Transaction Failed',
-          text2: txResult.message || 'Failed to send SOL',
-          visibilityTime: 4000,
-        });
-        return;
+      // Step 1: Get SOL price and convert USD to SOL
+      console.log('Getting SOL price...');
+      const solPriceInUsd = await getSolToUsdRate();
+      if (!solPriceInUsd) {
+        throw new Error('Could not determine SOL to USD conversion rate.');
       }
 
-      console.log('Transaction successful:', txResult.signature);
+      const amountInSol = convertUsdToSol(amount, solPriceInUsd);
+      const lamports = Math.floor(amountInSol * LAMPORTS_PER_SOL);
 
-      // Step 2: Record settlement in backend with transaction signature
+      console.log('Sending SOL transaction...', {
+        recipientPubkey,
+        amountUSD: amount,
+        amountSOL: amountInSol,
+        lamports
+      });
+
+      // Step 2: Build transaction
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+
+      const transaction = new Transaction({
+        feePayer: wallet.publicKey,
+        blockhash,
+        lastValidBlockHeight,
+      }).add(
+        SystemProgram.transfer({
+          fromPubkey: wallet.publicKey,
+          toPubkey: new PublicKey(recipientPubkey),
+          lamports,
+        })
+      );
+
+      // Step 3: Sign and send transaction
+      const signature = await wallet.signAndSendTransaction(transaction);
+      console.log('Transaction sent:', signature);
+
+      // Step 4: Confirm transaction
+      const confirmation = await connection.confirmTransaction({
+        signature,
+        blockhash,
+        lastValidBlockHeight,
+      });
+
+      if (confirmation.value.err) {
+        throw new Error('Transaction failed: ' + JSON.stringify(confirmation.value.err));
+      }
+
+      console.log('Transaction confirmed:', signature);
+
+      // Step 5: Record settlement in backend with transaction signature
       const settlementData = {
         from: debtorId,
         to: creditorId,
         amount,
         groupId: groupId as string | undefined,
-        transactionSignature: txResult.signature
+        transactionSignature: signature
       };
       console.log('Sending settlement to backend:', settlementData);
 
@@ -123,7 +176,8 @@ export default function BalancesScreen() {
           text2: `Payment of $${amount.toFixed(2)} sent successfully`,
           visibilityTime: 3000,
         });
-        fetchData(); // Refresh balances
+        // Refresh balances to show updated state
+        fetchData();
       } else {
         Toast.show({
           type: 'error',
@@ -136,10 +190,22 @@ export default function BalancesScreen() {
       }
     } catch (error: any) {
       console.error('Settlement error:', error);
+
+      let errorMessage = 'Please try again';
+      if (error.message) {
+        if (error.message.includes('User declined') || error.message.includes('User rejected')) {
+          errorMessage = 'Transaction was declined';
+        } else if (error.message.includes('Insufficient funds')) {
+          errorMessage = 'Insufficient SOL balance for this transaction';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+
       Toast.show({
         type: 'error',
         text1: 'Settlement Failed',
-        text2: error.message || 'Please try again',
+        text2: errorMessage,
         visibilityTime: 4000,
       });
     } finally {

@@ -29,7 +29,11 @@ export interface Settlement {
  */
 export const getBalances = async (groupId?: string): Promise<Balance[]> => {
   try {
-    const endpoint = groupId ? `/balances?groupId=${groupId}` : '/balances';
+    // Add timestamp to prevent caching issues
+    const timestamp = Date.now();
+    const endpoint = groupId
+      ? `/balances?groupId=${groupId}&t=${timestamp}`
+      : `/balances?t=${timestamp}`;
     const response = await apiClient.get(endpoint);
     return response.data;
   } catch (error: any) {

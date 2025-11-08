@@ -66,6 +66,7 @@ export default function GroupsScreen() {
   useFocusEffect(
     useCallback(() => {
       const fetchGroups = async () => {
+        console.log('🔄 Groups screen focused - fetching fresh data...');
         setIsLoading(true);
         try {
           // Get current user
@@ -80,6 +81,7 @@ export default function GroupsScreen() {
             return;
           }
 
+          console.log('📡 Fetching groups from API...');
           const response = await getGroups();
           if (response && response.success && Array.isArray(response.data)) {
             let totalYouOwe = 0;
@@ -87,6 +89,7 @@ export default function GroupsScreen() {
 
             // Fetch balances for each group and calculate status
             const mappedGroupsPromises = response.data.map(async (group: APIGroup) => {
+              console.log(`📊 Fetching balances for group: ${group.name} (${group.id})`);
               const balancesResponse = await getBalances(group.id);
               let status = 'settled up';
 
@@ -125,6 +128,11 @@ export default function GroupsScreen() {
             });
 
             const mappedGroups = await Promise.all(mappedGroupsPromises);
+            console.log('✅ Groups data refreshed successfully', {
+              groupCount: mappedGroups.length,
+              totalYouOwe,
+              totalYouAreOwed,
+            });
             setGroups(mappedGroups);
             setOverallBalance({ youOwe: totalYouOwe, youAreOwed: totalYouAreOwed });
 

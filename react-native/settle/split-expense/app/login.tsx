@@ -11,55 +11,36 @@ import {
     View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { connectWallet, storeWalletAuth, getStoredWalletAuth, clearWalletAuth } from '@/apis/auth';
-import { authorizeWallet, reauthorizeWallet } from '@/services/wallet';
+import { connectWallet } from '@/apis/auth';
+import { useAuthorization } from '@/components/providers';
+import { transact } from '@solana-mobile/mobile-wallet-adapter-protocol-web3js';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
 
 export default function LoginScreen() {
+  const { authorization, authorizeSession } = useAuthorization();
   const [isConnecting, setIsConnecting] = useState(false);
-  const [isCheckingSession, setIsCheckingSession] = useState(false); // Disabled for now
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
 
   // Check for cached wallet session on mount
-  // Temporarily disabled - enable after testing basic wallet connection
   useEffect(() => {
-    // checkCachedSession();
-    setIsCheckingSession(false);
-  }, []);
+    checkCachedSession();
+  }, []); // Empty dependency array - only run once on mount
 
   const checkCachedSession = async () => {
     try {
-      const cachedAuth = await getStoredWalletAuth();
+      // Check if we have a cached authorization from AuthorizationProvider
+      if (authorization?.selectedAccount) {
+        console.log('Found cached wallet session:', authorization.selectedAccount.address);
 
-      if (cachedAuth) {
-        console.log('Found cached wallet session, attempting reauthorization...');
+        // Connect to backend with cached wallet
+        const response = await connectWallet(authorization.selectedAccount.address);
 
-        try {
-          // Add timeout to prevent infinite loading
-          const reauthorizePromise = reauthorizeWallet(cachedAuth.authToken);
-          const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Reauthorization timeout')), 5000)
-          );
-
-          const walletAuth = await Promise.race([reauthorizePromise, timeoutPromise]) as any;
-          console.log('Reauthorization successful:', { pubkey: walletAuth.pubkey });
-
-          // Update stored auth with new token (token may have been refreshed)
-          await storeWalletAuth(walletAuth.authToken, walletAuth.pubkey);
-
-          // Connect to backend
-          const response = await connectWallet(walletAuth.pubkey);
-
-          if (response.success && response.data && !response.data.requiresProfileCompletion) {
-            console.log('Session restored successfully');
-            // Navigate directly to main app
-            router.replace('/(tabs)/groups');
-            return;
-          }
-        } catch (error) {
-          console.log('Reauthorization failed, user needs to login again:', error);
-          // Clear invalid cached auth
-          await clearWalletAuth();
-          // Fall through to show login screen
+        if (response.success && response.data && !response.data.requiresProfileCompletion) {
+          console.log('Session restored successfully');
+          // Navigate directly to main app
+          router.replace('/(tabs)/groups');
+          return;
         }
       }
     } catch (error) {
@@ -75,14 +56,15 @@ export default function LoginScreen() {
     try {
       // Step 1: Authorize wallet using Mobile Wallet Adapter
       console.log('Requesting wallet authorization...');
-      const walletAuth = await authorizeWallet();
-      console.log('Wallet authorized:', { pubkey: walletAuth.pubkey });
 
-      // Step 2: Store wallet auth credentials for session persistence
-      await storeWalletAuth(walletAuth.authToken, walletAuth.pubkey);
+      const account = await transact(async (wallet) => {
+        return await authorizeSession(wallet);
+      });
 
-      // Step 3: Connect to backend with the wallet pubkey
-      const response = await connectWallet(walletAuth.pubkey);
+      console.log('Wallet authorized:', account.address);
+
+      // Step 2: Connect to backend with the wallet address
+      const response = await connectWallet(account.address);
 
       if (response.success && response.data) {
         console.log('Backend connection successful:', response.data);
@@ -114,8 +96,18 @@ export default function LoginScreen() {
     } catch (error: any) {
       console.error('Wallet connection error:', error);
 
-      // Use the improved error messages from the wallet service
-      const errorMessage = error.message || 'Failed to connect wallet. Please try again.';
+      // Provide user-friendly error messages
+      let errorMessage = 'Failed to connect wallet. Please try again.';
+
+      if (error.message) {
+        if (error.message.includes('declined') || error.message.includes('-1')) {
+          errorMessage = 'Wallet authorization was declined. Please try again and approve the connection.';
+        } else if (error.message.includes('no wallet') || error.message.includes('not found')) {
+          errorMessage = 'No wallet app found. Please install Phantom, Solflare, or another Solana wallet.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
 
       Toast.show({
         type: 'error',
