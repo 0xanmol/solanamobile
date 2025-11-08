@@ -4,7 +4,8 @@ import {
   transact,
   Web3MobileWallet,
 } from '@solana-mobile/mobile-wallet-adapter-protocol-web3js';
-import { Account, useAuthorization } from '../providers/AuthorizationProvider';
+import { useAuthorization } from '../providers/AuthorizationProvider';
+import { APP_IDENTITY, SOLANA_CLUSTER } from '@/constants/wallet';
 
 /**
  * MWAWallet interface - Provides wallet adapter for signing transactions
@@ -87,19 +88,54 @@ export function useMWAWallet(): MWAWallet | null {
       /**
        * Sign and send a single transaction
        * Re-authorizes the session before signing and sending
+       * Automatically retries with fresh auth if token expired
        * @returns Transaction signature
        */
       signAndSendTransaction: async (transaction: Transaction): Promise<string> => {
-        return await transact(async (wallet: Web3MobileWallet) => {
-          // Re-authorize to ensure fresh session
-          await authorizeSession(wallet);
+        try {
+          // First attempt with existing auth token
+          return await transact(async (wallet: Web3MobileWallet) => {
+            await authorizeSession(wallet);
 
-          const signedTransactions = await wallet.signAndSendTransactions({
-            transactions: [transaction],
+            const signedTransactions = await wallet.signAndSendTransactions({
+              transactions: [transaction],
+            });
+
+            return signedTransactions[0];
           });
+        } catch (error: any) {
+          // Check if error is due to expired/invalid auth
+          const errorMessage = error.message || '';
+          if (
+            errorMessage.includes('CancellationException') ||
+            errorMessage.includes('expired') ||
+            errorMessage.includes('invalid') ||
+            errorMessage.includes('auth')
+          ) {
+            console.log('Auth token expired, retrying with fresh authorization...');
 
-          return signedTransactions[0];
-        });
+            // Retry in a completely new transact() session with fresh auth
+            return await transact(async (wallet: Web3MobileWallet) => {
+              // Force fresh authorization (no cached token)
+              await wallet.authorize({
+                cluster: SOLANA_CLUSTER,
+                identity: APP_IDENTITY,
+              });
+
+              // Note: The authorization state will be updated by the next authorizeSession call
+              // For now, just proceed with the transaction
+
+              const signedTransactions = await wallet.signAndSendTransactions({
+                transactions: [transaction],
+              });
+
+              return signedTransactions[0];
+            });
+          }
+
+          // Not an auth error, rethrow
+          throw error;
+        }
       },
 
       /**
