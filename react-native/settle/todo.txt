@@ -1,16 +1,13 @@
 DONE
-
-
-TODO
-[] Refresh pages after post calls to showcase data
-[] Replace all api call mock data with actual calls in their functions
-[] safe area for bottom of the screen
-[] fix adding people to group
-[] editing Name of Group takes to create group page
-[] search button does jackshit in friends,activity and groups tab
-[] The filters dont dont anything in group screen
-[] remove most of the garbage in settings screen. Just show details of person
-[] Joining group etc with share code options needs to be added, add button to join group in group tab
-[] How to accept friend requests?
-[] Remove chart from Group screen
-[] 
+[x] Refresh pages after post calls to showcase data
+[x] Replace all api call mock data with actual calls in their functions
+[x] safe area for bottom of the screen
+[x] fix adding people to group
+[x] remove most of the garbage in settings screen. Just show details of person
+[x] HIGH: The filters dont dont anything in group screen
+[x] HIGH: When we click on a row in activity which was "X paid Y this", go to a page that shows the details of that transaction. When, tx id, amount, etc
+[x] HIGH:  Square Pop ups look trash
+[x] HIGH: search button needs to search from top and update screen, not have a modal.
+[x] LOW: Make icon for friend in friends tab similar to how icons in groups tabs are handled
+[x] LOW: editing Name of Group takes to create group page, the Create group page itself should be better
+[x] LOW: Remove chart from Group screen
