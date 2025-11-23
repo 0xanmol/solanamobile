@@ -1,0 +1,52 @@
+## **Architecture & Technical**
+
+1. **Mock wallet**: Keep the existing Mobile Wallet Adapter setup, or add a separate mock wallet mode for testing without a real wallet?
+no keep the existing template setup, we will use the existing wallet adapter.
+
+2. **On-chain vs off-chain**:
+   - Should pot data live on-chain (Solana program) or off-chain (app database/state)?
+   - Should each pot have its own wallet address, or pool funds in a shared account?
+not we'll basically gonna make UI for it only no need to the database and anything else, another guy will handle the database and the backend, just keep the data in the central state store of the app where you'll have the entire auth data entire groups data etc and everything
+
+3. **Friend system**:
+   - How are friends added? (wallet address, username, invite link/code)
+   Friends are added via options of addingin the using their public address
+   - Should friends be stored on-chain or locally?
+   for now the'll be stored locally in the state store of the app, after than backend guy will handle all the remaning part
+
+## **Pot Functionality**
+
+4. **Pot creation**:
+   - Required fields: name, target date, contributors, target amount?
+   yes
+   - Can contributors be added after creation?
+   yes
+
+5. **Contributions**:
+   - Manual only, or also recurring (daily/weekly/monthly)?
+   only manual contirbutions 
+   - Minimum contribution amount?
+   just be greater than 0
+   - Can contributors see each other's contributions?
+   yeah
+
+
+6. **Release mechanism**:
+   - At the target date, who can release? (anyone, majority vote, creator only)
+   anyone can release the funds after the target date
+   - What happens if the target date passes but not all funds are contributed?
+   nothing will happen
+
+7. **Funds handling**:
+   - SOL only, or also USDC/SPL tokens?
+   monthly DCA into SOL/USDC
+   - Should funds be locked in a program account or escrow?
+   just keep the data in the state store of the app, after than backend guy will handle all the remaning part
+
+## **UI/UX**
+
+8. **Design direction**: Any specific style preferences? (colors, components, layout)
+theme style provided by reference images attached pick the color theme from there and the and UI style from the images
+
+9. **Activity feed**: What events should appear? (pot created, contributions, releases, friend additions)
+pot created, contributions, releases, friend additions
