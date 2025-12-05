@@ -24,8 +24,8 @@ export function AccountFeatureSend({ address }: { address: PublicKey }) {
           <AppText>Amount (SOL)</AppText>
           <TextInput
             style={{
-              backgroundColor,
-              color: textColor,
+              backgroundColor: backgroundColor as string,
+              color: textColor as string,
               borderWidth: 1,
               borderRadius: 25,
               paddingHorizontal: 16,
@@ -37,8 +37,8 @@ export function AccountFeatureSend({ address }: { address: PublicKey }) {
           <AppText>Destination Address</AppText>
           <TextInput
             style={{
-              backgroundColor,
-              color: textColor,
+              backgroundColor: backgroundColor as string,
+              color: textColor as string,
               borderWidth: 1,
               borderRadius: 25,
               paddingHorizontal: 16,

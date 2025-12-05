@@ -8,10 +8,10 @@ export function BaseButton({ label, onPress }: { label: string; onPress?: () => 
   const { borderColor, textColor } = useWalletUiTheme()
   return (
     <TouchableOpacity
-      style={[styles.trigger, { borderColor, flexDirection: 'row', alignItems: 'center', gap: 8 }]}
+      style={[styles.trigger, { borderColor: borderColor as string, flexDirection: 'row', alignItems: 'center', gap: 8 }]}
       onPress={onPress}
     >
-      <UiIconSymbol name="wallet.pass.fill" color={textColor} />
+      <UiIconSymbol name="wallet.pass.fill" color={textColor as string} />
       <AppText>{label}</AppText>
     </TouchableOpacity>
   )

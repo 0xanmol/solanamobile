@@ -1,8 +1,9 @@
-import React, { useState } from 'react'
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import React, { Fragment } from 'react'
+import { StyleSheet } from 'react-native'
 import { useThemeColor } from '@/hooks/use-theme-color'
+import { AppText } from '@/components/app-text'
+import * as Dropdown from '@rn-primitives/dropdown-menu'
 
-// TODO: Implement using @rn-primitives/dropdown-menu like in WalletUiDropdown
 export function AppDropdown({
   items,
   selectedItem,
@@ -12,58 +13,55 @@ export function AppDropdown({
   selectedItem: string
   selectItem: (item: string) => void
 }) {
-  const [isOpen, setIsOpen] = useState(false)
-
   const backgroundColor = useThemeColor({ light: '#f0f0f0', dark: '#333333' }, 'background')
-  const listBackgroundColor = useThemeColor({ light: '#ffffff', dark: '#1c1c1e' }, 'background')
   const borderColor = useThemeColor({ light: '#cccccc', dark: '#555555' }, 'border')
   const textColor = useThemeColor({ light: '#000000', dark: '#ffffff' }, 'text')
 
+  const dropdownItems = items.map((item) => ({
+    label: item,
+    onPress: () => selectItem(item),
+  }))
+
   return (
-    <View style={[styles.container, { backgroundColor }]}>
-      <TouchableOpacity style={[styles.header, { backgroundColor, borderColor }]} onPress={() => setIsOpen(!isOpen)}>
-        <Text style={{ color: textColor }}>{selectedItem}</Text>
-      </TouchableOpacity>
-      {isOpen && (
-        <View style={[styles.list, { backgroundColor: listBackgroundColor, borderColor }]}>
-          {items.map((option, index) => (
-            <TouchableOpacity
-              key={index}
-              style={[styles.item, { borderBottomColor: borderColor }]}
-              onPress={() => {
-                selectItem(option)
-                setIsOpen(false)
-              }}
-            >
-              <Text style={{ color: textColor }}>{option}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
-    </View>
+    <Dropdown.Root>
+      <Dropdown.Trigger style={[styles.trigger, { backgroundColor: backgroundColor as string, borderColor: borderColor as string }]}>
+        <AppText>{selectedItem}</AppText>
+      </Dropdown.Trigger>
+      <Dropdown.Portal>
+        <Dropdown.Overlay style={StyleSheet.absoluteFill}>
+          <Dropdown.Content style={{ ...styles.content, backgroundColor: backgroundColor as string, borderColor: borderColor as string }}>
+            {dropdownItems.map((item, index) => (
+              <Fragment key={item.label}>
+                <Dropdown.Item onPress={item.onPress} style={[styles.item, { borderColor: borderColor as string }]}>
+                  <AppText>{item.label}</AppText>
+                </Dropdown.Item>
+                {index < dropdownItems.length - 1 && <Dropdown.Separator style={{ backgroundColor: borderColor as string, height: 1 }} />}
+              </Fragment>
+            ))}
+          </Dropdown.Content>
+        </Dropdown.Overlay>
+      </Dropdown.Portal>
+    </Dropdown.Root>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    width: 'auto',
-    borderRadius: 5,
-    position: 'relative',
-  },
-  header: {
-    padding: 10,
-    borderRadius: 5,
-  },
-  list: {
+  trigger: {
+    alignItems: 'center',
+    borderRadius: 8,
     borderWidth: 1,
-    borderRadius: 5,
-    marginTop: 38,
-    width: 'auto',
-    position: 'absolute',
-    zIndex: 10,
+    flexDirection: 'row',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  content: {
+    borderWidth: 1,
+    borderRadius: 8,
+    marginTop: 8,
   },
   item: {
-    padding: 10,
-    borderBottomWidth: 1,
+    padding: 12,
+    flexWrap: 'nowrap',
   },
 })

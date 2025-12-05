@@ -96,7 +96,7 @@ type ToastViewportProps = {
 function ToastViewport({ toasts, onFinish }: ToastViewportProps) {
   const insets = useSafeAreaInsets()
   return (
-    <Portal>
+    <Portal name="toast">
       <View pointerEvents="box-none" style={StyleSheet.absoluteFill}>
         <View style={[styles.stack, { top: (insets.top || 16) + 12 }]}>
           {toasts.map((toast) => (

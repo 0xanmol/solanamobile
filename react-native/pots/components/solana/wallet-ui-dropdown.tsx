@@ -44,19 +44,19 @@ export function WalletUiDropdown() {
 
   return (
     <Dropdown.Root>
-      <Dropdown.Trigger style={[styles.trigger, { backgroundColor, borderColor }]}>
-        <UiIconSymbol name="wallet.pass.fill" color={textColor} />
+      <Dropdown.Trigger style={[styles.trigger, { backgroundColor: backgroundColor as string, borderColor: borderColor as string }]}>
+        <UiIconSymbol name="wallet.pass.fill" color={textColor as string} />
         <AppText>{ellipsify(account.publicKey.toString())}</AppText>
       </Dropdown.Trigger>
       <Dropdown.Portal>
         <Dropdown.Overlay style={StyleSheet.absoluteFill}>
-          <Dropdown.Content style={{ ...styles.list, backgroundColor, borderColor }}>
+          <Dropdown.Content style={{ ...styles.list, backgroundColor: backgroundColor as string, borderColor: borderColor as string }}>
             {items.map((item, index) => (
               <Fragment key={item.label}>
-                <Dropdown.Item onPress={item.onPress} style={[styles.item, { borderColor }]}>
+                <Dropdown.Item onPress={item.onPress} style={[styles.item, { borderColor: borderColor as string }]}>
                   <AppText>{item.label}</AppText>
                 </Dropdown.Item>
-                {index < items.length - 1 && <Dropdown.Separator style={{ backgroundColor: borderColor, height: 1 }} />}
+                {index < items.length - 1 && <Dropdown.Separator style={{ backgroundColor: borderColor as string, height: 1 }} />}
               </Fragment>
             ))}
           </Dropdown.Content>

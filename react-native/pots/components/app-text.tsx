@@ -14,7 +14,7 @@ export function AppText({ style, lightColor, darkColor, type = 'default', ...res
   return (
     <Text
       style={[
-        { color, fontFamily: Fonts.body },
+        { color: color as string, fontFamily: Fonts.body },
         type === 'default' ? styles.default : undefined,
         type === 'title' ? styles.title : undefined,
         type === 'defaultSemiBold' ? styles.defaultSemiBold : undefined,

@@ -150,7 +150,7 @@ export default function ActivityScreen() {
   return (
     <AppPage>
       <LinearGradient
-        colors={palette.gradient}
+        colors={palette.gradient as [string, string, string]}
         locations={isDark ? [0, 0.55, 1] : [0, 0.5, 1]}
         style={s.gradient}
       >

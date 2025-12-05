@@ -34,7 +34,7 @@ export function AccountFeature() {
   const invalidateBalance = useGetBalanceInvalidate({ address: account?.publicKey as PublicKey })
   const invalidateTokenAccounts = useGetTokenAccountsInvalidate({ address: account?.publicKey as PublicKey })
   const tokenAccountsQuery = useGetTokenAccounts({ address: account?.publicKey })
-  const copyTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     if (account) {

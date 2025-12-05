@@ -5,5 +5,5 @@ import React from 'react'
 export function AppView({ style, ...otherProps }: ViewProps) {
   const backgroundColor = useThemeColor({}, 'background')
 
-  return <View style={[{ backgroundColor, gap: 8 }, style]} {...otherProps} />
+  return <View style={[{ backgroundColor: backgroundColor as string, gap: 8 }, style]} {...otherProps} />
 }
