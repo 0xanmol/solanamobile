@@ -1,7 +1,7 @@
-import React from 'react'
-import { View, StyleSheet, Text, TouchableOpacity, Modal, ScrollView } from 'react-native'
 import { AppText } from '@/components/app-text'
 import { ellipsify } from '@/utils/ellipsify'
+import React from 'react'
+import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 
 interface AddContributorModalProps {
   visible: boolean
